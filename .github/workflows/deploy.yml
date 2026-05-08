@@ -6,32 +6,30 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write      # важно изменить с read на write
   pages: write
   id-token: write
 
 jobs:
   deploy_page:
     runs-on: ubuntu-latest
-    
+   
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # важно для работы с ветками
 
-      - name: Create GEMINI_TTS folder with copy of index.html
+      - name: Create GEMINI_TTS folder with all files
         run: |
           mkdir -p GEMINI_TTS
-          cp index.html GEMINI_TTS/index.html
-          cp favicon.ico GEMINI_TTS/favicon.ico
+          cp -r ./* GEMINI_TTS/ 2>/dev/null || true
+          rm -rf GEMINI_TTS/GEMINI_TTS 2>/dev/null || true
 
-      - name: Setup GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: '.'
-
-      - name: Deploy
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./GEMINI_TTS
+          publish_branch: gh-pages     # или main, если хочешь
+          force_orphan: true           # создаёт чистую историю (рекомендуется)
