@@ -26,6 +26,11 @@ jobs:
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'GEMINI_TTS'
 
       - name: Deploy
         id: deployment
