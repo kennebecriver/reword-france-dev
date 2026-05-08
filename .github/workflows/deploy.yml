@@ -6,30 +6,27 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write      # важно изменить с read на write
+  contents: read
   pages: write
   id-token: write
 
 jobs:
   deploy_page:
     runs-on: ubuntu-latest
-   
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # важно для работы с ветками
 
-      - name: Create GEMINI_TTS folder with all files
+      - name: Create GEMINI_TTS folder
         run: |
           mkdir -p GEMINI_TTS
           cp -r ./* GEMINI_TTS/ 2>/dev/null || true
           rm -rf GEMINI_TTS/GEMINI_TTS 2>/dev/null || true
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./GEMINI_TTS
-          publish_branch: gh-pages     # или main, если хочешь
-          force_orphan: true           # создаёт чистую историю (рекомендуется)
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
