@@ -23,6 +23,8 @@ jobs:
           mkdir -p GEMINI_TTS
           cp -r ./* GEMINI_TTS/ 2>/dev/null || true
           rm -rf GEMINI_TTS/GEMINI_TTS 2>/dev/null || true
+          ls -la GEMINI_TTS
+          find GEMINI_TTS -type f | wc -l
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5
