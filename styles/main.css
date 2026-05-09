@@ -329,13 +329,88 @@ body {
 }
 
 
+.dictation-card {
+    overflow: visible;
+}
+
 .dictation-card .dictation-card-body { align-items: center; justify-content: center; text-align: center; gap: 12px; }
+
+.dictation-card .dictation-card-header-row {
+    width: 100%;
+    max-width: min(100%, 400px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .dictation-card .dictation-card-label {
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 600;
     color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.dictation-card .dictation-peek-wrap {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.dictation-card .dictation-peek-chip {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 5px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    cursor: help;
+    font-family: inherit;
+    transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+.dictation-card .dictation-peek-chip:hover,
+.dictation-card .dictation-peek-wrap:focus-within .dictation-peek-chip {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(59, 130, 246, 0.35);
+    color: var(--text-main);
+}
+
+.dictation-card .dictation-peek-bubble {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    min-width: 160px;
+    max-width: min(300px, calc(100vw - 48px));
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+    font-size: 0.92rem;
+    font-weight: 550;
+    line-height: 1.35;
+    color: var(--text-main);
+    text-align: left;
+    white-space: pre-wrap;
+    word-break: break-word;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-6px);
+    transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.dictation-card .dictation-peek-wrap:hover .dictation-peek-bubble,
+.dictation-card .dictation-peek-wrap:focus-within .dictation-peek-bubble {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
 }
 .dictation-card .dictation-card-cue {
     font-size: 1.75rem;
