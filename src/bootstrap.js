@@ -40,6 +40,13 @@ const Engine = createCardsEngine({
     }
 });
 
+function focusDictationAnswerInput(stageEl) {
+    const input = stageEl?.querySelector?.('.card-active .dictation-input');
+    if (input instanceof HTMLInputElement) {
+        requestAnimationFrame(() => input.focus({ preventScroll: true }));
+    }
+}
+
 const DictationEngine = createCardsEngine({
     store,
     sessionKey: 'dictationSession',
@@ -47,6 +54,9 @@ const DictationEngine = createCardsEngine({
     showView,
     isGeminiModeEnabled: geminiModeState.isEnabled,
     buildCard: createDictationCard,
+    onAfterSpawn() {
+        focusDictationAnswerInput(dictShell.stage);
+    },
     dom: {
         stage: dictShell.stage,
         deckTitleEl: dictShell.deckTitleEl,
@@ -69,6 +79,36 @@ function bindDeckChrome(shell, engine) {
 
 bindDeckChrome(studyShell, Engine);
 bindDeckChrome(dictShell, DictationEngine);
+
+function initDeckKeyboardShortcuts() {
+    document.addEventListener(
+        'keydown',
+        (e) => {
+            const studyActive = document.getElementById('view-deck')?.classList.contains('active');
+            const dictActive = document.getElementById('view-deck-dictation')?.classList.contains('active');
+            if (!studyActive && !dictActive) return;
+
+            const ctrl = e.ctrlKey && !e.metaKey;
+
+            if (dictActive && ctrl && e.key === 'Enter') {
+                e.preventDefault();
+                DictationEngine.manualSwipe('left');
+                return;
+            }
+
+            if (!ctrl || (e.key !== 'z' && e.key !== 'Z')) return;
+
+            const inDictInput =
+                dictActive && document.activeElement?.classList?.contains?.('dictation-input');
+            if (inDictInput) return;
+
+            e.preventDefault();
+            if (dictActive) DictationEngine.manualSwipe('left');
+            else Engine.manualSwipe('left');
+        },
+        true
+    );
+}
 
 function initAutoPlayForDeck(shell, engine) {
     const toggle = shell.autoPlayToggle;
@@ -131,6 +171,7 @@ function bootstrapApp() {
 
     bindShuffleButtons();
     initAutoPlay();
+    initDeckKeyboardShortcuts();
 }
 
 bootstrapApp();

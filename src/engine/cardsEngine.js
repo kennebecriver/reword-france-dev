@@ -8,6 +8,7 @@ export function createCardsEngine({
     showView,
     isGeminiModeEnabled,
     buildCard,
+    onAfterSpawn,
     dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl }
 }) {
     return {
@@ -42,6 +43,8 @@ export function createCardsEngine({
                     ? 'card dictation-card card-next animating'
                     : 'card card-next animating';
             }
+
+            if (typeof onAfterSpawn === 'function') onAfterSpawn();
         },
 
         bindEvents(el) {
