@@ -19,6 +19,9 @@ export function createDictationCard(data) {
     const row = document.createElement('div');
     row.className = 'dictation-input-row';
 
+    const wrap = document.createElement('div');
+    wrap.className = 'dictation-input-wrap';
+
     const input = document.createElement('input');
     input.type = 'text';
     input.className = 'dictation-input';
@@ -33,20 +36,41 @@ export function createDictationCard(data) {
     doneCheck.textContent = '✓';
     doneCheck.setAttribute('aria-hidden', 'true');
 
-    row.append(input, doneCheck);
+    const hint = document.createElement('div');
+    hint.className = 'dictation-done-hint';
+    hint.textContent = 'Parfait !';
+    hint.setAttribute('aria-live', 'polite');
+
+    wrap.append(input, doneCheck);
+    row.append(wrap, hint);
+
+    let wasComplete = false;
 
     const syncFromInput = () => {
         const target = card.dataset.t1 ?? '';
         const value = input.value;
 
-        input.classList.remove('dictation-input--match', 'dictation-input--error');
+        input.classList.remove('dictation-input--match', 'dictation-input--error', 'dictation-input--complete');
         doneCheck.classList.remove('dictation-done-check--visible');
+        hint.classList.remove('dictation-done-hint--visible');
 
-        if (value === target) {
-            input.classList.add('dictation-input--match');
+        const complete = value === target;
+
+        if (complete) {
+            input.classList.add('dictation-input--match', 'dictation-input--complete');
             doneCheck.classList.add('dictation-done-check--visible');
+            hint.classList.add('dictation-done-hint--visible');
+
+            if (!wasComplete) {
+                wasComplete = true;
+                queueMicrotask(() => {
+                    window.DictationEngine?.playActiveCard?.();
+                });
+            }
             return;
         }
+
+        wasComplete = false;
 
         if (target.startsWith(value)) {
             input.classList.add('dictation-input--match');
