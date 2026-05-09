@@ -68,7 +68,7 @@ export function createCardsEngine({
             };
 
             el.onpointerdown = (event) => {
-                if (event.target.closest('button')) return;
+                if (event.target.closest('button, input, textarea, select')) return;
                 start = { x: event.clientX, y: event.clientY };
                 current = { x: 0, y: 0 };
                 el.classList.remove('animating');

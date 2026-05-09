@@ -45,7 +45,7 @@ src/
 | Study | `#view-deck` | без префикса | `Engine`, очередь `store.currentSession` |
 | Dictation | `#view-deck-dictation` | `dictation-*` | `DictationEngine`, очередь `store.dictationSession` |
 
-На dictation-shell по умолчанию **скрыт** блок Auto-play (он не подключён к логике); Gemini остаётся и использует общий флаг через `initGeminiModeToggle([...inputs])`.
+Auto-play есть на обоих экранах: отдельные переключатели для study и dictation (`bootstrap.js` — обёртка `spawn` + колбек при включении). Gemini по-прежнему синхронизируется между экранами через `initGeminiModeToggle([...inputs])`.
 
 ## 4. Маршруты экранов
 

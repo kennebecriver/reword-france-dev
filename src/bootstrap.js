@@ -18,7 +18,7 @@ if (!studyViewEl || !dictationViewEl) {
 }
 
 const studyShell = mountDeckShell(studyViewEl, { idSuffix: '' });
-const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-', hideAutoPlay: true });
+const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-' });
 
 const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle]);
 const api = createSheetsApi(runtimeConfig);
@@ -69,20 +69,20 @@ function bindDeckChrome(shell, engine) {
 bindDeckChrome(studyShell, Engine);
 bindDeckChrome(dictShell, DictationEngine);
 
-function initAutoPlay() {
-    const toggle = studyShell.autoPlayToggle;
+function initAutoPlayForDeck(shell, engine) {
+    const toggle = shell.autoPlayToggle;
 
-    const originalSpawn = Engine.spawn;
+    const originalSpawn = engine.spawn;
 
-    Engine.spawn = function wrappedSpawn() {
+    engine.spawn = function wrappedSpawn() {
         originalSpawn.apply(this, arguments);
 
         if (toggle.checked) {
             requestAnimationFrame(() => {
                 setTimeout(() => {
-                    const activeCard = studyShell.stage.querySelector('.card-active');
-                    if (activeCard && !Engine._isPlaying) {
-                        Engine.playActiveCard();
+                    const activeCard = shell.stage.querySelector('.card-active');
+                    if (activeCard && !engine._isPlaying) {
+                        engine.playActiveCard();
                     }
                 }, 150);
             });
@@ -91,12 +91,17 @@ function initAutoPlay() {
 
     toggle.addEventListener('change', (event) => {
         if (/** @type {HTMLInputElement} */ (event.target).checked) {
-            const activeCard = studyShell.stage.querySelector('.card-active');
-            if (activeCard && !Engine._isPlaying) {
-                setTimeout(() => Engine.playActiveCard(), 50);
+            const activeCard = shell.stage.querySelector('.card-active');
+            if (activeCard && !engine._isPlaying) {
+                setTimeout(() => engine.playActiveCard(), 50);
             }
         }
     });
+}
+
+function initAutoPlay() {
+    initAutoPlayForDeck(studyShell, Engine);
+    initAutoPlayForDeck(dictShell, DictationEngine);
 }
 
 function bindShuffleButtons() {

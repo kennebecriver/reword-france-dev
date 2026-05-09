@@ -331,3 +331,70 @@ body {
     line-height: 1.25;
     color: var(--text-main);
 }
+
+.dictation-card .dictation-input-row {
+    width: 100%;
+    max-width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.dictation-card .dictation-input {
+    flex: 1;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-main);
+    font-size: 1rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+    touch-action: auto;
+}
+
+.dictation-card .dictation-input::placeholder {
+    color: var(--text-muted);
+    opacity: 0.85;
+}
+
+.dictation-card .dictation-input--match {
+    border-color: rgba(16, 185, 129, 0.55);
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.25);
+    background: rgba(16, 185, 129, 0.06);
+}
+
+.dictation-card .dictation-input--error {
+    border-color: rgba(239, 68, 68, 0.65);
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.28);
+    background: rgba(239, 68, 68, 0.06);
+}
+
+.dictation-card .dictation-done-check {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--success);
+    border: 1px solid rgba(16, 185, 129, 0.45);
+    background: rgba(16, 185, 129, 0.12);
+    opacity: 0;
+    transform: scale(0.85);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+}
+
+.dictation-card .dictation-done-check--visible {
+    opacity: 1;
+    transform: scale(1);
+}
