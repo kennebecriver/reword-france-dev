@@ -66,7 +66,11 @@ function bootstrapApp() {
             renderTopics(store.appData, (deckName) => Engine.initDeck(deckName));
             showView('topics');
         } catch (err) {
-            document.getElementById('loading-msg').innerHTML = `<span style="color:#ff6b6b">Error: ${err.message}</span>`;
+            const loadingMsg = document.getElementById('loading-msg');
+            if (loadingMsg) {
+                loadingMsg.textContent = `Error: ${err.message}`;
+                loadingMsg.style.color = '#ff6b6b';
+            }
         }
     };
 

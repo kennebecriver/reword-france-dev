@@ -1,3 +1,5 @@
+import { createStudyCard } from '../ui/components/studyCard.js';
+
 // Main flashcard engine.
 // Logic is preserved from original monolithic script.
 export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
@@ -31,24 +33,7 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
         },
 
         createCardEl(data) {
-            const div = document.createElement('div');
-            div.className = 'card card-next';
-            div.dataset.t1 = data.text1;
-            div.dataset.t2 = data.text2;
-            div.innerHTML = `
-                <div class="card-body">
-                    <div class="card-text-primary">${data.text1}</div>
-                    <div class="card-eye-zone"><button class="reveal-btn">👁</button></div>
-                    <div class="card-text-secondary">${data.text2}</div>
-                </div>
-            `;
-            const btn = div.querySelector('.reveal-btn');
-            btn.onpointerdown = (event) => event.stopPropagation();
-            btn.onclick = () => {
-                div.querySelector('.card-eye-zone').style.display = 'none';
-                div.querySelector('.card-text-secondary').style.display = 'block';
-            };
-            return div;
+            return createStudyCard(data);
         },
 
         bindEvents(el) {

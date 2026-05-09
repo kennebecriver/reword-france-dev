@@ -72,6 +72,7 @@ body {
     transition: transform 0.1s, border-color 0.2s, background-color 0.2s;
 }
 .topic-card:active { transform: scale(0.98); }
+.topic-card-meta { color: var(--text-muted); font-size: 0.8rem; margin-top: 5px; }
 
 /* --- CARD STAGE --- */
 #card-stage {
