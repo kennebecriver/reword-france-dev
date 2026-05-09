@@ -7,6 +7,7 @@ import { showView } from './ui/views.js';
 import { mountDeckShell } from './ui/deckShell.js';
 import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
+import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
 
 const runtimeConfig = getRuntimeConfig();
 
@@ -115,7 +116,8 @@ function bootstrapApp() {
             store.appData = await api.fetchData();
             renderTopics(store.appData, {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
-                onDictationClick: (deckName) => DictationEngine.initDeck(deckName)
+                onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
+                onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName)
             });
             showView('topics');
         } catch (err) {

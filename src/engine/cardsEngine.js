@@ -1,3 +1,5 @@
+import { shuffleArrayInPlace } from './shuffleUtils.js';
+
 // Swipe / queue / audio engine parameterized by DOM scope and Card factory (`createCardEl`).
 export function createCardsEngine({
     store,
@@ -173,16 +175,8 @@ export function createCardsEngine({
             if (total === 0) showView('topics');
         },
 
-        _shuffleArray(arr) {
-            for (let i = arr.length - 1; i > 0; i -= 1) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-            }
-            return arr;
-        },
-
         shuffleDeck() {
-            this._shuffleArray(store[sessionKey]);
+            shuffleArrayInPlace(store[sessionKey]);
 
             const nextCard = stage.firstElementChild;
 

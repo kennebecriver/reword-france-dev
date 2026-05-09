@@ -1,4 +1,4 @@
-export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick }) {
+export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onShuffleDeck }) {
     const card = document.createElement('div');
     card.className = 'topic-card';
 
@@ -16,6 +16,23 @@ export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClic
     main.append(title, meta);
     main.addEventListener('click', () => onDeckClick(name));
 
+    const actions = document.createElement('div');
+    actions.className = 'topic-card-actions';
+
+    const shuffleBtn = document.createElement('button');
+    shuffleBtn.type = 'button';
+    shuffleBtn.className = 'shuffle-btn topic-topic-shuffle-btn';
+    shuffleBtn.title = 'Shuffle deck';
+    shuffleBtn.setAttribute('aria-label', 'Shuffle deck');
+    shuffleBtn.textContent = '☠';
+    shuffleBtn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        event.preventDefault();
+        onShuffleDeck(name);
+        shuffleBtn.classList.add('shuffling');
+        setTimeout(() => shuffleBtn.classList.remove('shuffling'), 200);
+    });
+
     const dictBtn = document.createElement('button');
     dictBtn.type = 'button';
     dictBtn.className = 'topic-dict-btn';
@@ -27,7 +44,8 @@ export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClic
         onDictationClick(name);
     });
 
-    card.append(main, dictBtn);
+    actions.append(shuffleBtn, dictBtn);
+    card.append(main, actions);
 
     return card;
 }

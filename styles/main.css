@@ -85,9 +85,21 @@ body {
 }
 .topic-card-main:active { opacity: 0.92; }
 
+.topic-card-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.topic-topic-shuffle-btn {
+    /* Reuses .shuffle-btn; keeps icon crisp on narrow rows */
+    flex-shrink: 0;
+}
+
 .topic-dict-btn {
     flex-shrink: 0;
-    align-self: center;
     padding: 0 10px;
     min-height: 32px;
     border-radius: 8px;
@@ -422,17 +434,20 @@ body {
     font-size: 0.92rem;
     font-weight: 650;
     letter-spacing: 0.04em;
-    color: var(--success);
-    text-shadow: 0 0 24px rgba(16, 185, 129, 0.35);
-    opacity: 0;
-    max-height: 0;
-    overflow: hidden;
-    transform: translateY(-4px);
-    transition: opacity 0.25s ease, max-height 0.28s ease, transform 0.25s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Slot reserved always: text stays in DOM, only fades via inner span */
+    min-height: 1.45em;
 }
 
-.dictation-card .dictation-done-hint--visible {
+.dictation-card .dictation-done-hint-text {
+    color: var(--success);
+    opacity: 0;
+    transition: opacity 0.22s ease;
+}
+
+.dictation-card .dictation-done-hint--visible .dictation-done-hint-text {
     opacity: 1;
-    max-height: 2rem;
-    transform: translateY(0);
+    text-shadow: 0 0 24px rgba(16, 185, 129, 0.35);
 }

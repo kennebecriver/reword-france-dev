@@ -38,8 +38,12 @@ export function createDictationCard(data) {
 
     const hint = document.createElement('div');
     hint.className = 'dictation-done-hint';
-    hint.textContent = 'Parfait !';
     hint.setAttribute('aria-live', 'polite');
+    const hintText = document.createElement('span');
+    hintText.className = 'dictation-done-hint-text';
+    hintText.textContent = 'Parfait !';
+    hintText.setAttribute('aria-hidden', 'true');
+    hint.appendChild(hintText);
 
     wrap.append(input, doneCheck);
     row.append(wrap, hint);
@@ -53,6 +57,7 @@ export function createDictationCard(data) {
         input.classList.remove('dictation-input--match', 'dictation-input--error', 'dictation-input--complete');
         doneCheck.classList.remove('dictation-done-check--visible');
         hint.classList.remove('dictation-done-hint--visible');
+        hintText.setAttribute('aria-hidden', 'true');
 
         const complete = value === target;
 
@@ -60,6 +65,7 @@ export function createDictationCard(data) {
             input.classList.add('dictation-input--match', 'dictation-input--complete');
             doneCheck.classList.add('dictation-done-check--visible');
             hint.classList.add('dictation-done-hint--visible');
+            hintText.setAttribute('aria-hidden', 'false');
 
             if (!wasComplete) {
                 wasComplete = true;

@@ -2,7 +2,7 @@ import { createTopicCard } from './components/topicCard.js';
 
 /**
  * @param {Record<string, Array<{text1: string, text2: string}>>} appData
- * @param {{ onDeckClick: (name: string) => void, onDictationClick: (name: string) => void }} callbacks
+ * @param {{ onDeckClick: (name: string) => void, onDictationClick: (name: string) => void, onShuffleDeck: (name: string) => void }} callbacks
  */
 export function renderTopics(appData, callbacks) {
     const grid = document.getElementById('topics-grid');
@@ -13,7 +13,8 @@ export function renderTopics(appData, callbacks) {
             name,
             cardsCount: appData[name].length,
             onDeckClick: callbacks.onDeckClick,
-            onDictationClick: callbacks.onDictationClick
+            onDictationClick: callbacks.onDictationClick,
+            onShuffleDeck: callbacks.onShuffleDeck
         });
         grid.appendChild(card);
     });
