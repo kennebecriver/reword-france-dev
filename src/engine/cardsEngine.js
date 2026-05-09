@@ -1,39 +1,45 @@
-import { createStudyCard } from '../ui/components/studyCard.js';
-
-// Main flashcard engine.
-// Logic is preserved from original monolithic script.
-export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
+// Swipe / queue / audio engine parameterized by DOM scope and Card factory (`createCardEl`).
+export function createCardsEngine({
+    store,
+    sessionKey,
+    viewId,
+    showView,
+    isGeminiModeEnabled,
+    buildCard,
+    dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl }
+}) {
     return {
         THRESHOLD: 100,
 
         initDeck(name) {
-            store.currentSession = [...store.appData[name]];
-            document.getElementById('deck-title').textContent = name;
-            document.getElementById('card-stage').innerHTML = '';
+            store[sessionKey] = [...store.appData[name]];
+            deckTitleEl.textContent = name;
+            stage.innerHTML = '';
             this.updateCounter();
             this.spawn();
-            showView('deck');
+            showView(viewId);
         },
 
         spawn() {
-            const stage = document.getElementById('card-stage');
-            while (stage.children.length < 2 && store.currentSession.length > 0) {
-                const data = store.currentSession.shift();
-                stage.prepend(this.createCardEl(data));
+            while (stage.children.length < 2 && store[sessionKey].length > 0) {
+                const data = store[sessionKey].shift();
+                stage.prepend(buildCard(data));
             }
 
             const top = stage.lastElementChild;
             if (top && !top.classList.contains('card-active')) {
-                top.className = 'card card-active animating';
+                top.className = top.classList.contains('dictation-card')
+                    ? 'card dictation-card card-active animating'
+                    : 'card card-active animating';
                 this.bindEvents(top);
             }
 
             const next = stage.firstElementChild;
-            if (next && next !== top) next.className = 'card card-next animating';
-        },
-
-        createCardEl(data) {
-            return createStudyCard(data);
+            if (next && next !== top) {
+                next.className = next.classList.contains('dictation-card')
+                    ? 'card dictation-card card-next animating'
+                    : 'card card-next animating';
+            }
         },
 
         bindEvents(el) {
@@ -72,42 +78,39 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
         },
 
         manualSwipe(dir) {
-            const top = document.querySelector('.card-active');
+            const top = stage.querySelector('.card-active');
             if (top) this.swipe(top, dir);
         },
 
         async playActiveCard() {
-            const statusEl = document.getElementById('play-status');
-            const top = document.querySelector('.card-active');
+            const top = stage.querySelector('.card-active');
 
-            if (!statusEl) return;
+            if (!playStatusEl) return;
             if (!top) {
-                statusEl.textContent = 'No active card';
+                playStatusEl.textContent = 'No active card';
                 return;
             }
 
             const phrase = (top.dataset.t1 || '').trim();
             if (!phrase) {
-                statusEl.textContent = 'Empty phrase';
+                playStatusEl.textContent = 'Empty phrase';
                 return;
             }
 
-            // Protection from repetitive taps while audio is being processed.
             if (this._isPlaying) return;
             this._isPlaying = true;
 
-            statusEl.textContent = 'Loading...';
+            playStatusEl.textContent = 'Loading...';
 
             try {
                 const cacheKey = `tts-${isGeminiModeEnabled() ? 'gemini' : 'default'}-${phrase}`;
                 const cache = await caches.open('tts-audio-cache');
 
-                // Legacy cache key support kept to preserve current behavior.
                 const legacyCacheKey = `tts-${phrase}`;
                 let response = (await cache.match(legacyCacheKey)) || (await cache.match(cacheKey));
 
                 if (!response) {
-                    statusEl.textContent = 'Generating audio...';
+                    playStatusEl.textContent = 'Generating audio...';
 
                     const modelParam = isGeminiModeEnabled() ? '&model=gemini' : '';
                     const url = `https://reword-france-463001342259.northamerica-northeast2.run.app/get_voice?phrase=${encodeURIComponent(phrase)}${modelParam}`;
@@ -118,7 +121,6 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
                         throw new Error(`Server returned ${response.status}`);
                     }
 
-                    // Store generated audio in browser cache.
                     await cache.put(cacheKey, response.clone());
                 }
 
@@ -129,21 +131,21 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
 
                 audio.onended = () => {
                     URL.revokeObjectURL(audioUrl);
-                    statusEl.textContent = 'Ready';
+                    playStatusEl.textContent = 'Ready';
                     this._isPlaying = false;
                 };
 
                 audio.onerror = () => {
                     URL.revokeObjectURL(audioUrl);
-                    statusEl.textContent = 'Playback error';
+                    playStatusEl.textContent = 'Playback error';
                     this._isPlaying = false;
                 };
 
                 await audio.play();
-                statusEl.textContent = '▶ Playing';
+                playStatusEl.textContent = '▶ Playing';
             } catch (error) {
                 console.error('Play error:', error);
-                statusEl.textContent = 'Failed to play';
+                playStatusEl.textContent = 'Failed to play';
                 this._isPlaying = false;
             }
         },
@@ -155,7 +157,7 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
             el.style.opacity = '0';
 
             if (dir === 'right') {
-                store.currentSession.push({ text1: el.dataset.t1, text2: el.dataset.t2 });
+                store[sessionKey].push({ text1: el.dataset.t1, text2: el.dataset.t2 });
             }
 
             setTimeout(() => {
@@ -166,12 +168,11 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
         },
 
         updateCounter() {
-            const total = store.currentSession.length + document.getElementById('card-stage').children.length;
-            document.getElementById('deck-counter').textContent = total;
+            const total = store[sessionKey].length + stage.children.length;
+            deckCounterEl.textContent = total;
             if (total === 0) showView('topics');
         },
 
-        // Fisher-Yates shuffle: shuffles the array in place.
         _shuffleArray(arr) {
             for (let i = arr.length - 1; i > 0; i -= 1) {
                 const j = Math.floor(Math.random() * (i + 1));
@@ -180,30 +181,26 @@ export function createCardsEngine({ store, showView, isGeminiModeEnabled }) {
             return arr;
         },
 
-        // Public method to shuffle the deck queue.
         shuffleDeck() {
-            // 1. Shuffle the upcoming cards queue.
-            this._shuffleArray(store.currentSession);
+            this._shuffleArray(store[sessionKey]);
 
-            // 2. Refresh next card preview (if present) to reflect new order.
-            const stage = document.getElementById('card-stage');
-            const nextCard = stage?.firstElementChild;
+            const nextCard = stage.firstElementChild;
 
-            if (nextCard && store.currentSession.length > 0) {
-                const newData = store.currentSession.shift();
-                const newNext = this.createCardEl(newData);
-                newNext.className = 'card card-next animating';
+            if (nextCard && store[sessionKey].length > 0) {
+                const newData = store[sessionKey].shift();
+                const newNext = buildCard(newData);
+                newNext.className = newNext.classList.contains('dictation-card')
+                    ? 'card dictation-card card-next animating'
+                    : 'card card-next animating';
                 nextCard.replaceWith(newNext);
             }
 
-            // 3. Visual feedback on shuffle button.
-            const btn = document.getElementById('shuffle-btn');
-            if (btn) {
-                btn.classList.add('shuffling');
-                setTimeout(() => btn.classList.remove('shuffling'), 200);
+            if (shuffleBtnEl) {
+                shuffleBtnEl.classList.add('shuffling');
+                setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
             }
 
-            console.log(`Deck shuffled: ${store.currentSession.length} cards in queue`);
+            console.log(`Deck shuffled: ${store[sessionKey].length} cards in queue`);
         }
     };
 }

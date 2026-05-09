@@ -21,38 +21,44 @@
         <div id="topics-grid" class="topics-grid"></div>
     </div>
 
-    <div id="view-deck" class="view">
-        <div class="header">
-            <button class="back-btn" onclick="showView('topics')">✕</button>
-            <h1 id="deck-title">---</h1>
-            <div class="header-controls">
-                <span id="deck-counter">0</span>
-                <button class="shuffle-btn" id="shuffle-btn" title="Shuffle deck">☠</button>
+    <!-- Study deck: shell mounted from `#deck-shell-template` (see bootstrap.js). -->
+    <div id="view-deck" class="view deck-view-root"></div>
+    <!-- Dictation: same shell, different `#card-stage` + engine bindings. -->
+    <div id="view-deck-dictation" class="view deck-view-root"></div>
+
+    <template id="deck-shell-template">
+        <div class="deck-shell">
+            <div class="header">
+                <button type="button" class="back-btn deck-back-btn" aria-label="Back">✕</button>
+                <h1 class="deck-shell-title"></h1>
+                <div class="header-controls">
+                    <span class="deck-shell-counter"></span>
+                    <button type="button" class="shuffle-btn deck-shuffle-btn" title="Shuffle deck">☠</button>
+                </div>
+            </div>
+
+            <div class="deck-card-stage"></div>
+
+            <div class="footer">
+                <button type="button" class="action-btn btn-done deck-btn-done">Done</button>
+                <button type="button" class="action-btn btn-play deck-btn-play">Play</button>
+                <button type="button" class="action-btn btn-repeat deck-btn-repeat">Repeat</button>
+            </div>
+            <div class="play-status deck-play-status">Ready</div>
+            <div class="toggle-wrapper">
+                <label class="toggle-switch">
+                    <input type="checkbox" class="deck-auto-play-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Auto-play</span>
+                <label class="toggle-switch" style="margin-left: 14px;">
+                    <input type="checkbox" class="deck-gemini-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+                <span class="toggle-label">Gemini</span>
             </div>
         </div>
-        
-        <div id="card-stage"></div>
-
-        <div class="footer">
-            <button class="action-btn btn-done" onclick="Engine.manualSwipe('left')">Done</button>
-            <button class="action-btn btn-play" onclick="Engine.playActiveCard()">Play</button>
-            <button class="action-btn btn-repeat" onclick="Engine.manualSwipe('right')">Repeat</button>
-        </div>
-        <div id="play-status" class="play-status">Ready</div>
-        <!-- Auto-play Toggle -->
-        <div class="toggle-wrapper">
-            <label class="toggle-switch">
-                <input type="checkbox" id="auto-play-toggle">
-                <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Auto-play</span>
-            <label class="toggle-switch" style="margin-left: 14px;">
-                <input type="checkbox" id="gemini-mode-toggle">
-                <span class="toggle-slider"></span>
-            </label>
-            <span class="toggle-label">Gemini</span>
-        </div>
-    </div>
+    </template>
 
     <script type="module" src="./src/bootstrap.js"></script>
 </body>

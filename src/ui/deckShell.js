@@ -1,0 +1,69 @@
+// Clones shared deck-screen markup into a `.view` root. Keeps layout in one `<template>` in index.html.
+
+function qs(root, selector) {
+    const node = root.querySelector(selector);
+    if (!node) throw new Error(`deckShell: missing ${selector}`);
+    return node;
+}
+
+/**
+ * @param {HTMLElement} viewRoot - e.g. #view-deck
+ * @param {{ idSuffix?: string, hideAutoPlay?: boolean }} [options]
+ */
+export function mountDeckShell(viewRoot, options = {}) {
+    const tpl = document.getElementById('deck-shell-template');
+    if (!tpl) throw new Error('deckShell: #deck-shell-template not found');
+
+    const idSuffix = options.idSuffix ?? '';
+    const withId = (base) => (idSuffix ? `${idSuffix}${base}` : base);
+
+    /** @type {DocumentFragment | HTMLElement} */
+    const fragOrNode = tpl.content.cloneNode(true);
+    const deckRoot = qs(fragOrNode, '.deck-shell');
+
+    const deckTitleEl = qs(deckRoot, '.deck-shell-title');
+    const stage = qs(deckRoot, '.deck-card-stage');
+    const deckCounterEl = qs(deckRoot, '.deck-shell-counter');
+    const shuffleBtnEl = qs(deckRoot, '.deck-shuffle-btn');
+    const playStatusEl = qs(deckRoot, '.deck-play-status');
+    const autoPlayToggle = qs(deckRoot, '.deck-auto-play-toggle');
+    const geminiToggle = qs(deckRoot, '.deck-gemini-toggle');
+    const backBtn = qs(deckRoot, '.deck-back-btn');
+    const doneBtn = qs(deckRoot, '.deck-btn-done');
+    const playBtn = qs(deckRoot, '.deck-btn-play');
+    const repeatBtn = qs(deckRoot, '.deck-btn-repeat');
+
+    deckTitleEl.id = withId('deck-title');
+    stage.id = withId('card-stage');
+    deckCounterEl.id = withId('deck-counter');
+    shuffleBtnEl.id = withId('shuffle-btn');
+    playStatusEl.id = withId('play-status');
+    autoPlayToggle.id = withId('auto-play-toggle');
+    geminiToggle.id = withId('gemini-mode-toggle');
+
+    viewRoot.innerHTML = '';
+    viewRoot.appendChild(deckRoot);
+
+    if (options.hideAutoPlay) {
+        const autoplayLabel = autoPlayToggle.closest('label');
+        const autoplayCaption = autoplayLabel?.nextElementSibling;
+        if (autoplayLabel) autoplayLabel.style.display = 'none';
+        if (autoplayCaption?.classList?.contains('toggle-label')) autoplayCaption.style.display = 'none';
+        autoPlayToggle.disabled = true;
+    }
+
+    return {
+        root: deckRoot,
+        stage,
+        deckTitleEl,
+        deckCounterEl,
+        shuffleBtnEl,
+        playStatusEl,
+        autoPlayToggle,
+        geminiToggle,
+        backBtn,
+        doneBtn,
+        playBtn,
+        repeatBtn
+    };
+}

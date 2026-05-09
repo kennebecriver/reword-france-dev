@@ -1,7 +1,10 @@
 import { createTopicCard } from './components/topicCard.js';
 
-// Topics/decks list rendering.
-export function renderTopics(appData, onDeckClick) {
+/**
+ * @param {Record<string, Array<{text1: string, text2: string}>>} appData
+ * @param {{ onDeckClick: (name: string) => void, onDictationClick: (name: string) => void }} callbacks
+ */
+export function renderTopics(appData, callbacks) {
     const grid = document.getElementById('topics-grid');
     grid.innerHTML = '';
 
@@ -9,7 +12,8 @@ export function renderTopics(appData, onDeckClick) {
         const card = createTopicCard({
             name,
             cardsCount: appData[name].length,
-            onClick: () => onDeckClick(name)
+            onDeckClick: callbacks.onDeckClick,
+            onDictationClick: callbacks.onDictationClick
         });
         grid.appendChild(card);
     });
