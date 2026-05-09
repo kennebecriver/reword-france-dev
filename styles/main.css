@@ -130,6 +130,14 @@ body {
     position: relative; flex: 1; margin: 20px 20px 10px;
     min-height: 0;
     perspective: 1000px;
+    z-index: 5;
+}
+
+.deck-shell > .footer,
+.deck-shell > .play-status,
+.deck-shell > .toggle-wrapper {
+    position: relative;
+    z-index: 1;
 }
 
 .card {
@@ -329,7 +337,8 @@ body {
 }
 
 
-.dictation-card {
+/* Dictation popovers extend past the card; base `.card` keeps overflow: hidden for swipe cards. */
+.card.dictation-card {
     overflow: visible;
 }
 
@@ -356,7 +365,7 @@ body {
     flex-wrap: wrap;
     justify-content: flex-end;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
 }
 
 .dictation-card .dictation-chars-wrap {
@@ -366,22 +375,26 @@ body {
 
 .dictation-card .dictation-chars-toggle {
     cursor: pointer;
+    padding: 3px 7px;
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
 }
 
 .dictation-card .dictation-chars-panel {
     position: absolute;
     right: 0;
-    top: calc(100% + 8px);
-    z-index: 25;
-    min-width: min(100vw - 48px, 220px);
-    padding: 10px;
-    border-radius: var(--radius-sm);
+    top: calc(100% + 6px);
+    z-index: 50;
+    width: min(100vw - 48px, 168px);
+    min-width: 0;
+    padding: 6px;
+    border-radius: 8px;
     border: 1px solid var(--border-color);
     background: var(--card-bg);
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(4px);
+    transform: translateY(3px);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     pointer-events: none;
 }
@@ -396,18 +409,19 @@ body {
 .dictation-card .dictation-chars-grid {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
+    gap: 4px;
 }
 
 .dictation-card .dictation-chars-cell {
     box-sizing: border-box;
-    min-height: 40px;
-    padding: 0 4px;
-    border-radius: 8px;
+    min-height: 0;
+    height: 28px;
+    padding: 0 2px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
     background: rgba(255, 255, 255, 0.04);
     color: var(--text-main);
-    font-size: 1.05rem;
+    font-size: 0.88rem;
     font-weight: 600;
     font-family: inherit;
     line-height: 1;

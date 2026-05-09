@@ -130,7 +130,10 @@ export function createDictationCard(data) {
 
     const onDocClickToCloseChars = (e) => {
         const t = e.target;
-        if (t instanceof Node && (charsWrap.contains(t) || charsPanel.contains(t))) return;
+        if (!(t instanceof Node)) return;
+        if (charsWrap.contains(t) || charsPanel.contains(t)) return;
+        const clickEl = t instanceof Element ? t : t.parentElement;
+        if (clickEl?.closest?.('.toggle-wrapper')) return;
         closeCharsPanel();
     };
 
