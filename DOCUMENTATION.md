@@ -5,11 +5,11 @@
 Лёгкое SPA-приложение (без сборщика), которое:
 
 - грузит колоды из Google Sheets;
-- показывает список топиков;
-- открывает **режим карточек** (study) на полном экране;
-- открывает **режим Dictation** — отдельный полноценный экран с той же «оболочкой» колоды, но **другая сцена (`card-stage`) и другая фабрика карточек**;
-- умеет TTS-проигрывание через backend;
-- поддерживает auto-play и Gemini-режим (на основном экране колоды; Gemini-синхронизируется с экраном dictation).
+- показывает список топиков с быстрыми действиями (shuffle до входа в режим);
+- открывает **Study** — колода со свайпами и карточкой «глаз / перевод»;
+- открывает **Dictation** — отдельный полноэкранный экран с той же оболочкой колоды, но **другая сцена** (`card-stage`) и **другая фабрика карточек**;
+- умеет TTS через backend;
+- поддерживает **Auto-play** на обоих экранах колоды и **Gemini** (один флаг на два чекбокса).
 
 Стек: `HTML + CSS + Vanilla JS (ES Modules)`.
 
@@ -19,73 +19,110 @@
 index.html
 styles/main.css
 src/
-  bootstrap.js                    # сборка приложения, два инстанса движка, биндинг UI
+  bootstrap.js                    # два инстанса движка, bindDeckChrome, auto-play, topics callbacks
   api/sheetsApi.js
-  config/runtime.js               # Gemini: несколько чекбоксов синхронизируются между экранами
-  state/store.js                  # currentSession + dictationSession
-  engine/cardsEngine.js           # один движок, параметры: очередь, DOM-scope, фабрика карты
+  config/runtime.js               # URL-параметры; Gemini на нескольких input одновременно
+  state/store.js                  # appData, currentSession, dictationSession
+  engine/cardsEngine.js           # swipe / queue / TTS / shuffle текущей сессии
+  engine/shuffleUtils.js          # Fisher-Yates + shuffle источника топика (appData)
   ui/views.js
-  ui/deckShell.js                 # монтирование шаблона `#deck-shell-template` в любой `.view`
+  ui/deckShell.js                 # клон `#deck-shell-template` → view root
   ui/topics.js
-  ui/components/topicCard.js      # топик + кнопка Dictation
+  ui/components/topicCard.js      # топик: Study | shuffle | Dictation
   ui/components/studyCard.js
-  ui/components/dictationCard.js # минимальный DOM для dictation (замени логику по месту)
+  ui/components/dictationCard.js # dictation UI + ввод + HINT + «Parfait !»
 ```
 
 ## 3. Переиспользование экрана колоды (Deck shell)
 
-Разметка **одного экрана колоды** определена **один раз** в `index.html`:
+Разметка экрана колоды задаётся **один раз** в `index.html`:
 
-- `<template id="deck-shell-template">` — header, счётчик, shuffle, `#card-stage` (генерируемый класс `.deck-card-stage` + присвоенный `id`), footer, статус воспроизведения, тумблеры.
+- `<template id="deck-shell-template">` — header (назад, заголовок, счётчик, shuffle), область `.deck-card-stage` (после монтирования получает уникальный `id`), footer (Done / Play / Repeat), статус воспроизведения, тумблеры Auto-play и Gemini.
 
-`mountDeckShell(viewRoot, options)` из `src/ui/deckShell.js` клонирует этот шаблон в два корня:
+`mountDeckShell(viewRoot, options)` в `src/ui/deckShell.js` клонирует шаблон в переданный корень.
 
-| Экран | `#view-*` root | Префикс `id` | Назначение |
-|-------|----------------|----------------|-------------|
-| Study | `#view-deck` | без префикса | `Engine`, очередь `store.currentSession` |
-| Dictation | `#view-deck-dictation` | `dictation-*` | `DictationEngine`, очередь `store.dictationSession` |
+| Экран | `#view-*` | Суффикс `id` | Движок | Очередь в `store` |
+|-------|-----------|--------------|--------|-------------------|
+| Study | `#view-deck` | нет | `Engine` (`window.Engine`) | `currentSession` |
+| Dictation | `#view-deck-dictation` | `dictation-` | `DictationEngine` (`window.DictationEngine`) | `dictationSession` |
 
-Auto-play есть на обоих экранах: отдельные переключатели для study и dictation (`bootstrap.js` — обёртка `spawn` + колбек при включении). Gemini по-прежнему синхронизируется между экранами через `initGeminiModeToggle([...inputs])`.
+Опция **`hideAutoPlay`** в `mountDeckShell` оставлена для особых случаев; сейчас на dictation-shell Auto-play **включён** так же, как на study (`bootstrap.js`: `initAutoPlayForDeck` для обоих).
+
+**Gemini:** `initGeminiModeToggle([studyGeminiInput, dictationGeminiInput])` держит одно логическое состояние и синхронизирует оба чекбокса.
 
 ## 4. Маршруты экранов
 
-`showView(id)` включает `#view-${id}`.
+`showView(id)` включает `#view-${id}` у элементов с классом `.view`.
 
-Активные имена:
+Идентификаторы: `loading`, `topics`, `deck`, `deck-dictation`.
 
-- `loading`, `topics`, `deck`, `deck-dictation`
+Глобально для совместимости с разметкой: `window.showView`, `window.Engine`, `window.DictationEngine`.
 
-## 5. Topic list и кнопка Dictation
+## 5. Список топиков (`topicCard` + shuffle источника)
 
 `createTopicCard` (`src/ui/components/topicCard.js`):
 
-- слева: кнопка `.topic-card-main` — как раньше, открывает study (`Engine.initDeck`);
-- справа: `.topic-dict-btn` («Dictation») — открывает dictation (`DictationEngine.initDeck`);
-- `stopPropagation` на Dictation-кнопке, чтобы не срабатывал клик по всей строке.
+- **`.topic-card-main`** — открывает Study: `Engine.initDeck(name)`;
+- **`.topic-topic-shuffle-btn`** — иконка как у shuffle в шапке колоды (`shuffle-btn` + анимация `shuffling`): перемешивает **исходную колоду** `store.appData[name]` на месте (**до** выбора режима);
+- **`.topic-dict-btn`** — Dictation: `DictationEngine.initDeck(name)`;
+- у shuffle и Dictation — `stopPropagation` / `preventDefault`, чтобы не открывался Study.
+
+Логика перемешивания источника: `shuffleTopicSourceDeck(store, deckName)` в `src/engine/shuffleUtils.js` (Fisher-Yates). При следующем заходе в Study или Dictation очередь берётся как `[...store.appData[name]]`, порядок уже новый. Текущая активная сессия на столе при этом не меняется, пока пользователь снова не откроет топик.
+
+Внутри колоды shuffle по-прежнему обрабатывает только **`currentSession`** / **`dictationSession`** через `Engine.shuffleDeck()` / `DictationEngine.shuffleDeck()` (`cardsEngine.js` использует общий `shuffleArrayInPlace` из `shuffleUtils.js`).
 
 ## 6. Движок `createCardsEngine`
 
-Один код, несколько конфигураций:
+Один модуль, две конфигурации в `bootstrap.js`:
 
-- **`sessionKey`**: ключ массива в `store` (`currentSession` | `dictationSession`);
-- **`viewId`**: куда переходить при `updateCounter`/пустой очереди (после последней карточки — `topics`);
-- **`dom`**: ссылки на **конкретный** `#card-stage` и элементы счётчика внутри своего экрана;
-- **`buildCard`**: функция `data => HTMLElement` (`createStudyCard` или `createDictationCard`);
+| Параметр | Назначение |
+|----------|------------|
+| `sessionKey` | `currentSession` или `dictationSession` |
+| `viewId` | `deck` или `deck-dictation` (куда `showView` при работе колоды / при нуле карт) |
+| `dom` | `{ stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl }` — всё привязано к **своему** экрану |
+| `buildCard` | `createStudyCard` или `createDictationCard` |
 
-Внутри методы всегда ищут `.card-active` **внутри `dom.stage`**, а не во всём документе.
+Активная карточка и свайп ищутся **только внутри `dom.stage`**.
 
-## 7. Что и где править дальше
+**Исключения для свайпа:** в `bindEvents` игнорируется `pointerdown`, если цель внутри `button`, `input`, `textarea`, `select` — чтобы не тянуть карту при вводе и кнопках.
+
+Основные методы: `initDeck`, `spawn`, `bindEvents`, `manualSwipe`, `swipe`, `playActiveCard`, `shuffleDeck`, `updateCounter`.
+
+## 7. Карточка Dictation (`dictationCard.js`)
+
+- Лейбл **«Dictation»** — отдельной строкой по центру (как раньше). Чип **HINT** стоит **под полем ввода**, справа; при наведении / `focus-within` всплывашка показывается **над** чипом (не ломает блок **«Parfait !»** снизу). Текст подсказки — **`data.text1`** (`textContent`, без HTML). У **`.dictation-card`** **`overflow: visible`**, чтобы подсказка не обрезалась.
+- **Cue** (`.dictation-card-cue`): показывает **`data.text2`** (подсказка по смыслу).
+- **Ввод:** поле под cue; сравнение идёт с **`dataset.t1`** / эталоном **`text1`**:
+  - префикс совпадает с началом эталона → зелёная подсветка поля;
+  - любое расхождение по префиксу → красная подсветка;
+  - полное совпадение строки → усиленное «успешное» оформление поля, галочка **внутри** поля (absolute справа), строка **«Parfait !»** под полем (текст всегда в DOM, видимость только через **`opacity`**, чтобы не было скачка вёрстки).
+- При **первом** переходе в состояние полного совпадения вызывается **`window.DictationEngine.playActiveCard()`** (эквивалент нажатия Play на экране dictation).
+
+## 8. Карточка Study (`studyCard.js`)
+
+Классическая карточка: `text1`, зона с кнопкой «глаз», скрытый `text2`, `dataset.t1` / `t2` для движка и TTS.
+
+## 9. Что и где править
 
 | Задача | Файл |
 |--------|------|
-| Верстка/классы общего экрана колоды | `index.html` → `#deck-shell-template` и `styles/main.css` |
-| Два экрана / префиксы id | `src/ui/deckShell.js`, `bootstrap.js` |
-| Разметка карточки study | `src/ui/components/studyCard.js` |
-| Разметка и поведение dictation | `src/ui/components/dictationCard.js` (+ при необходимости отдельный движок-обёртка) |
-| Логика свайпа/TTS/shuffle для обоих | `src/engine/cardsEngine.js` |
-| Состояние очередей | `src/state/store.js` |
+| Общая разметка экрана колоды | `index.html` → `#deck-shell-template`, стили в `styles/main.css` |
+| Монтирование shell / id | `src/ui/deckShell.js`, `src/bootstrap.js` |
+| Топики и shuffle до режима | `topicCard.js`, `topics.js`, `shuffleUtils.js`, `bootstrap.js` |
+| Study-карта | `src/ui/components/studyCard.js` |
+| Dictation UI и правила ввода | `src/ui/components/dictationCard.js` |
+| Свайп / TTS / shuffle сессии | `src/engine/cardsEngine.js` |
+| Данные Sheets | `src/api/sheetsApi.js` |
+| Состояние | `src/state/store.js` |
+| Переключение экранов | `src/ui/views.js` |
 
-## 8. Зависимости и запуск
+## 10. Конвенции
 
-- npm не нужен.
-- Для данных: `Google Sheets API key` и `sheet id` в query (`?key=...&id=...`).
+- Новую разметку карточек собирать через DOM API / маленькие компоненты, без склеивания HTML в движке для пользовательских строк.
+- Общие алгоритмы (shuffle) — в `shuffleUtils.js`, чтобы не дублировать Fisher-Yates.
+
+## 11. Зависимости и запуск
+
+- Сборка и npm не требуются.
+- Нужен браузер с поддержкой ES modules.
+- Для данных: в URL параметры **`key`** (Google Sheets API key) и **`id`** (spreadsheet id).

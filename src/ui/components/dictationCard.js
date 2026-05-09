@@ -8,32 +8,9 @@ export function createDictationCard(data) {
     const body = document.createElement('div');
     body.className = 'card-body dictation-card-body';
 
-    const headerRow = document.createElement('div');
-    headerRow.className = 'dictation-card-header-row';
-
     const label = document.createElement('div');
     label.className = 'dictation-card-label';
     label.textContent = 'Dictation';
-
-    const peekWrap = document.createElement('div');
-    peekWrap.className = 'dictation-peek-wrap';
-
-    const peekBtn = document.createElement('button');
-    peekBtn.type = 'button';
-    peekBtn.className = 'dictation-peek-chip';
-    peekBtn.textContent = 'HINT';
-    peekBtn.title = 'Hover to peek at the expected phrase';
-    peekBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
-
-    const peekBubble = document.createElement('div');
-    peekBubble.className = 'dictation-peek-bubble';
-    peekBubble.id = `dictation-peek-${Math.random().toString(36).slice(2, 9)}`;
-    peekBubble.setAttribute('role', 'tooltip');
-    peekBubble.textContent = data.text1;
-    peekBtn.setAttribute('aria-describedby', peekBubble.id);
-
-    peekWrap.append(peekBtn, peekBubble);
-    headerRow.append(label, peekWrap);
 
     const cue = document.createElement('div');
     cue.className = 'dictation-card-cue';
@@ -59,6 +36,29 @@ export function createDictationCard(data) {
     doneCheck.textContent = '✓';
     doneCheck.setAttribute('aria-hidden', 'true');
 
+    const peekRow = document.createElement('div');
+    peekRow.className = 'dictation-peek-row';
+
+    const peekWrap = document.createElement('div');
+    peekWrap.className = 'dictation-peek-wrap';
+
+    const peekBtn = document.createElement('button');
+    peekBtn.type = 'button';
+    peekBtn.className = 'dictation-peek-chip';
+    peekBtn.textContent = 'HINT';
+    peekBtn.title = 'Hover to peek at the expected phrase';
+    peekBtn.addEventListener('pointerdown', (e) => e.stopPropagation());
+
+    const peekBubble = document.createElement('div');
+    peekBubble.className = 'dictation-peek-bubble';
+    peekBubble.id = `dictation-peek-${Math.random().toString(36).slice(2, 9)}`;
+    peekBubble.setAttribute('role', 'tooltip');
+    peekBubble.textContent = data.text1;
+    peekBtn.setAttribute('aria-describedby', peekBubble.id);
+
+    peekWrap.append(peekBtn, peekBubble);
+    peekRow.appendChild(peekWrap);
+
     const hint = document.createElement('div');
     hint.className = 'dictation-done-hint';
     hint.setAttribute('aria-live', 'polite');
@@ -69,7 +69,7 @@ export function createDictationCard(data) {
     hint.appendChild(hintText);
 
     wrap.append(input, doneCheck);
-    row.append(wrap, hint);
+    row.append(wrap, peekRow, hint);
 
     let wasComplete = false;
 
@@ -111,7 +111,7 @@ export function createDictationCard(data) {
     input.addEventListener('input', syncFromInput);
     input.addEventListener('pointerdown', (e) => e.stopPropagation());
 
-    body.append(headerRow, cue, row);
+    body.append(label, cue, row);
     card.appendChild(body);
 
     syncFromInput();

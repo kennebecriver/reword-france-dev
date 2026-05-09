@@ -335,22 +335,20 @@ body {
 
 .dictation-card .dictation-card-body { align-items: center; justify-content: center; text-align: center; gap: 12px; }
 
-.dictation-card .dictation-card-header-row {
-    width: 100%;
-    max-width: min(100%, 400px);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-}
-
 .dictation-card .dictation-card-label {
     font-size: 0.72rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     font-weight: 600;
     color: var(--text-muted);
-    flex-shrink: 0;
+}
+
+.dictation-card .dictation-peek-row {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    min-height: 1.35em;
 }
 
 .dictation-card .dictation-peek-wrap {
@@ -383,7 +381,7 @@ body {
 .dictation-card .dictation-peek-bubble {
     position: absolute;
     right: 0;
-    top: calc(100% + 8px);
+    bottom: calc(100% + 8px);
     min-width: 160px;
     max-width: min(300px, calc(100vw - 48px));
     padding: 10px 12px;
@@ -400,7 +398,7 @@ body {
     word-break: break-word;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-6px);
+    transform: translateY(6px);
     transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
     z-index: 20;
     pointer-events: none;
