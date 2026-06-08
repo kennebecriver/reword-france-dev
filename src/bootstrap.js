@@ -1,6 +1,7 @@
 import { getRuntimeConfig, initGeminiModeToggle } from './config/runtime.js';
 import { createSheetsApi } from './api/sheetsApi.js';
 import { createCardsEngine } from './engine/cardsEngine.js';
+import { createListenEngine } from './engine/listenEngine.js';
 import { store } from './state/store.js';
 import { renderTopics } from './ui/topics.js';
 import { showView } from './ui/views.js';
@@ -24,11 +25,27 @@ const studyShell = mountDeckShell(studyViewEl, { idSuffix: '' });
 const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-' });
 const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-' });
 
-const geminiModeState = initGeminiModeToggle([
-    studyShell.geminiToggle,
-    dictShell.geminiToggle,
-    listenShell.geminiToggle
-]);
+listenShell.doneBtn.textContent = 'Back';
+listenShell.doneBtn.classList.remove('btn-done');
+listenShell.doneBtn.classList.add('btn-nav-back');
+listenShell.repeatBtn.textContent = 'Next';
+listenShell.repeatBtn.classList.remove('btn-repeat');
+listenShell.repeatBtn.classList.add('btn-nav-next');
+
+function hideGeminiToggle(shell) {
+    const geminiToggle = shell.geminiToggle;
+    if (!geminiToggle) return;
+
+    const label = geminiToggle.closest('label');
+    const caption = label?.nextElementSibling;
+    if (label) label.style.display = 'none';
+    if (caption?.classList?.contains('toggle-label')) caption.style.display = 'none';
+    geminiToggle.disabled = true;
+}
+
+const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle]);
+hideGeminiToggle(listenShell);
+
 const api = createSheetsApi(runtimeConfig);
 
 const Engine = createCardsEngine({
@@ -73,19 +90,20 @@ const DictationEngine = createCardsEngine({
     }
 });
 
-const ListenEngine = createCardsEngine({
+const ListenEngine = createListenEngine({
     store,
     sessionKey: 'listenSession',
     viewId: 'deck-listen',
     showView,
-    isGeminiModeEnabled: geminiModeState.isEnabled,
     buildCard: createListenCard,
     dom: {
         stage: listenShell.stage,
         deckTitleEl: listenShell.deckTitleEl,
         deckCounterEl: listenShell.deckCounterEl,
         playStatusEl: listenShell.playStatusEl,
-        shuffleBtnEl: listenShell.shuffleBtnEl
+        shuffleBtnEl: listenShell.shuffleBtnEl,
+        backNavBtn: listenShell.doneBtn,
+        nextNavBtn: listenShell.repeatBtn
     }
 });
 
@@ -101,9 +119,16 @@ function bindDeckChrome(shell, engine) {
     shell.repeatBtn.addEventListener('click', () => engine.manualSwipe('right'));
 }
 
+function bindListenChrome(shell, engine) {
+    shell.backBtn.addEventListener('click', () => showView('topics'));
+    shell.doneBtn.addEventListener('click', () => engine.goBack());
+    shell.playBtn.addEventListener('click', () => engine.playActiveCard());
+    shell.repeatBtn.addEventListener('click', () => engine.goNext());
+}
+
 bindDeckChrome(studyShell, Engine);
 bindDeckChrome(dictShell, DictationEngine);
-bindDeckChrome(listenShell, ListenEngine);
+bindListenChrome(listenShell, ListenEngine);
 
 function initDeckKeyboardShortcuts() {
     document.addEventListener(
@@ -115,6 +140,18 @@ function initDeckKeyboardShortcuts() {
             if (!studyActive && !dictActive && !listenActive) return;
 
             const ctrl = e.ctrlKey && !e.metaKey;
+
+            if (listenActive && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                ListenEngine.goBack();
+                return;
+            }
+
+            if (listenActive && e.key === 'ArrowRight') {
+                e.preventDefault();
+                ListenEngine.goNext();
+                return;
+            }
 
             if (dictActive && ctrl && e.key === 'Enter') {
                 e.preventDefault();
@@ -130,7 +167,6 @@ function initDeckKeyboardShortcuts() {
 
             e.preventDefault();
             if (dictActive) DictationEngine.manualSwipe('left');
-            else if (listenActive) ListenEngine.manualSwipe('left');
             else Engine.manualSwipe('left');
         },
         true
@@ -167,10 +203,39 @@ function initAutoPlayForDeck(shell, engine) {
     });
 }
 
+function initAutoPlayForListen(shell, engine) {
+    const toggle = shell.autoPlayToggle;
+    const originalRender = engine.renderCard.bind(engine);
+
+    engine.renderCard = function wrappedRender() {
+        originalRender();
+
+        if (toggle.checked) {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const activeCard = shell.stage.querySelector('.card-active');
+                    if (activeCard && !engine._isPlaying) {
+                        engine.playActiveCard();
+                    }
+                }, 150);
+            });
+        }
+    };
+
+    toggle.addEventListener('change', (event) => {
+        if (/** @type {HTMLInputElement} */ (event.target).checked) {
+            const activeCard = shell.stage.querySelector('.card-active');
+            if (activeCard && !engine._isPlaying) {
+                setTimeout(() => engine.playActiveCard(), 50);
+            }
+        }
+    });
+}
+
 function initAutoPlay() {
     initAutoPlayForDeck(studyShell, Engine);
     initAutoPlayForDeck(dictShell, DictationEngine);
-    initAutoPlayForDeck(listenShell, ListenEngine);
+    initAutoPlayForListen(listenShell, ListenEngine);
 }
 
 function bindShuffleButtons() {

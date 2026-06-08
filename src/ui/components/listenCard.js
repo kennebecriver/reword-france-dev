@@ -1,5 +1,5 @@
 // Listen card: shows text2 upfront; text1 hidden under the eye (inverse of studyCard).
-// dataset.t1/t2 match study/dictation so cardsEngine TTS still reads phrase from t1.
+// dataset.t1/t2 match study/dictation so listenEngine TTS still reads phrase from t1.
 
 export function createListenCard(data) {
     const card = document.createElement('div');
