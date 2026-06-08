@@ -3,5 +3,6 @@
 export const store = {
     appData: {},
     currentSession: [],
-    dictationSession: []
+    dictationSession: [],
+    listenSession: []
 };

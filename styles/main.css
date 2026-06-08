@@ -93,7 +93,8 @@ body {
     flex-shrink: 0;
 }
 
-.topic-topic-shuffle-btn {
+.topic-topic-shuffle-btn,
+.topic-listen-btn {
     /* Reuses .shuffle-btn; keeps icon crisp on narrow rows */
     flex-shrink: 0;
 }
@@ -194,9 +195,16 @@ body {
 .action-btn:hover { background: rgba(255,255,255,0.05); }
 .btn-repeat,
 .btn-done,
+.btn-nav-back,
+.btn-nav-next,
 .btn-play {
     background: rgba(255,255,255,0.03);
     border-color: var(--border-color);
+}
+.btn-nav-back:disabled,
+.btn-nav-next:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
 }
 .btn-play {
     border-color: rgba(59, 130, 246, 0.28);

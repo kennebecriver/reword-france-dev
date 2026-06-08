@@ -1,4 +1,4 @@
-export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onShuffleDeck }) {
+export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onListenClick, onShuffleDeck }) {
     const card = document.createElement('div');
     card.className = 'topic-card';
 
@@ -44,7 +44,25 @@ export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClic
         onDictationClick(name);
     });
 
-    actions.append(shuffleBtn, dictBtn);
+    const actionButtons = [];
+
+    if (name.startsWith('🎧')) {
+        const listenBtn = document.createElement('button');
+        listenBtn.type = 'button';
+        listenBtn.className = 'shuffle-btn topic-listen-btn';
+        listenBtn.textContent = '🎧';
+        listenBtn.title = 'Open listen mode';
+        listenBtn.setAttribute('aria-label', 'Open listen mode');
+        listenBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            onListenClick(name);
+        });
+        actionButtons.push(listenBtn);
+    }
+
+    actionButtons.push(shuffleBtn, dictBtn);
+    actions.append(...actionButtons);
     card.append(main, actions);
 
     return card;

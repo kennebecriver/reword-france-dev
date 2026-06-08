@@ -1,27 +1,51 @@
 import { getRuntimeConfig, initGeminiModeToggle } from './config/runtime.js';
 import { createSheetsApi } from './api/sheetsApi.js';
 import { createCardsEngine } from './engine/cardsEngine.js';
+import { createListenEngine } from './engine/listenEngine.js';
 import { store } from './state/store.js';
 import { renderTopics } from './ui/topics.js';
 import { showView } from './ui/views.js';
 import { mountDeckShell } from './ui/deckShell.js';
 import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
+import { createListenCard } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
 
 const runtimeConfig = getRuntimeConfig();
 
 const studyViewEl = document.getElementById('view-deck');
 const dictationViewEl = document.getElementById('view-deck-dictation');
+const listenViewEl = document.getElementById('view-deck-listen');
 
-if (!studyViewEl || !dictationViewEl) {
+if (!studyViewEl || !dictationViewEl || !listenViewEl) {
     throw new Error('bootstrap: deck view roots missing');
 }
 
 const studyShell = mountDeckShell(studyViewEl, { idSuffix: '' });
 const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-' });
+const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-' });
+
+listenShell.doneBtn.textContent = 'Back';
+listenShell.doneBtn.classList.remove('btn-done');
+listenShell.doneBtn.classList.add('btn-nav-back');
+listenShell.repeatBtn.textContent = 'Next';
+listenShell.repeatBtn.classList.remove('btn-repeat');
+listenShell.repeatBtn.classList.add('btn-nav-next');
+
+function hideGeminiToggle(shell) {
+    const geminiToggle = shell.geminiToggle;
+    if (!geminiToggle) return;
+
+    const label = geminiToggle.closest('label');
+    const caption = label?.nextElementSibling;
+    if (label) label.style.display = 'none';
+    if (caption?.classList?.contains('toggle-label')) caption.style.display = 'none';
+    geminiToggle.disabled = true;
+}
 
 const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle]);
+hideGeminiToggle(listenShell);
+
 const api = createSheetsApi(runtimeConfig);
 
 const Engine = createCardsEngine({
@@ -66,8 +90,26 @@ const DictationEngine = createCardsEngine({
     }
 });
 
+const ListenEngine = createListenEngine({
+    store,
+    sessionKey: 'listenSession',
+    viewId: 'deck-listen',
+    showView,
+    buildCard: createListenCard,
+    dom: {
+        stage: listenShell.stage,
+        deckTitleEl: listenShell.deckTitleEl,
+        deckCounterEl: listenShell.deckCounterEl,
+        playStatusEl: listenShell.playStatusEl,
+        shuffleBtnEl: listenShell.shuffleBtnEl,
+        backNavBtn: listenShell.doneBtn,
+        nextNavBtn: listenShell.repeatBtn
+    }
+});
+
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;
+window.ListenEngine = ListenEngine;
 window.showView = showView;
 
 function bindDeckChrome(shell, engine) {
@@ -77,8 +119,16 @@ function bindDeckChrome(shell, engine) {
     shell.repeatBtn.addEventListener('click', () => engine.manualSwipe('right'));
 }
 
+function bindListenChrome(shell, engine) {
+    shell.backBtn.addEventListener('click', () => showView('topics'));
+    shell.doneBtn.addEventListener('click', () => engine.goBack());
+    shell.playBtn.addEventListener('click', () => engine.playActiveCard());
+    shell.repeatBtn.addEventListener('click', () => engine.goNext());
+}
+
 bindDeckChrome(studyShell, Engine);
 bindDeckChrome(dictShell, DictationEngine);
+bindListenChrome(listenShell, ListenEngine);
 
 function initDeckKeyboardShortcuts() {
     document.addEventListener(
@@ -86,9 +136,22 @@ function initDeckKeyboardShortcuts() {
         (e) => {
             const studyActive = document.getElementById('view-deck')?.classList.contains('active');
             const dictActive = document.getElementById('view-deck-dictation')?.classList.contains('active');
-            if (!studyActive && !dictActive) return;
+            const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+            if (!studyActive && !dictActive && !listenActive) return;
 
             const ctrl = e.ctrlKey && !e.metaKey;
+
+            if (listenActive && e.key === 'ArrowLeft') {
+                e.preventDefault();
+                ListenEngine.goBack();
+                return;
+            }
+
+            if (listenActive && e.key === 'ArrowRight') {
+                e.preventDefault();
+                ListenEngine.goNext();
+                return;
+            }
 
             if (dictActive && ctrl && e.key === 'Enter') {
                 e.preventDefault();
@@ -140,14 +203,45 @@ function initAutoPlayForDeck(shell, engine) {
     });
 }
 
+function initAutoPlayForListen(shell, engine) {
+    const toggle = shell.autoPlayToggle;
+    const originalRender = engine.renderCard.bind(engine);
+
+    engine.renderCard = function wrappedRender() {
+        originalRender();
+
+        if (toggle.checked) {
+            requestAnimationFrame(() => {
+                setTimeout(() => {
+                    const activeCard = shell.stage.querySelector('.card-active');
+                    if (activeCard && !engine._isPlaying) {
+                        engine.playActiveCard();
+                    }
+                }, 150);
+            });
+        }
+    };
+
+    toggle.addEventListener('change', (event) => {
+        if (/** @type {HTMLInputElement} */ (event.target).checked) {
+            const activeCard = shell.stage.querySelector('.card-active');
+            if (activeCard && !engine._isPlaying) {
+                setTimeout(() => engine.playActiveCard(), 50);
+            }
+        }
+    });
+}
+
 function initAutoPlay() {
     initAutoPlayForDeck(studyShell, Engine);
     initAutoPlayForDeck(dictShell, DictationEngine);
+    initAutoPlayForListen(listenShell, ListenEngine);
 }
 
 function bindShuffleButtons() {
     studyShell.shuffleBtnEl.addEventListener('click', () => Engine.shuffleDeck());
     dictShell.shuffleBtnEl.addEventListener('click', () => DictationEngine.shuffleDeck());
+    listenShell.shuffleBtnEl.addEventListener('click', () => ListenEngine.shuffleDeck());
 }
 
 function bootstrapApp() {
@@ -157,6 +251,7 @@ function bootstrapApp() {
             renderTopics(store.appData, {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
+                onListenClick: (deckName) => ListenEngine.initDeck(deckName),
                 onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName)
             });
             showView('topics');
