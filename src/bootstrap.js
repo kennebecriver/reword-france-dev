@@ -7,21 +7,28 @@ import { showView } from './ui/views.js';
 import { mountDeckShell } from './ui/deckShell.js';
 import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
+import { createListenCard } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
 
 const runtimeConfig = getRuntimeConfig();
 
 const studyViewEl = document.getElementById('view-deck');
 const dictationViewEl = document.getElementById('view-deck-dictation');
+const listenViewEl = document.getElementById('view-deck-listen');
 
-if (!studyViewEl || !dictationViewEl) {
+if (!studyViewEl || !dictationViewEl || !listenViewEl) {
     throw new Error('bootstrap: deck view roots missing');
 }
 
 const studyShell = mountDeckShell(studyViewEl, { idSuffix: '' });
 const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-' });
+const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-' });
 
-const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle]);
+const geminiModeState = initGeminiModeToggle([
+    studyShell.geminiToggle,
+    dictShell.geminiToggle,
+    listenShell.geminiToggle
+]);
 const api = createSheetsApi(runtimeConfig);
 
 const Engine = createCardsEngine({
@@ -66,8 +73,25 @@ const DictationEngine = createCardsEngine({
     }
 });
 
+const ListenEngine = createCardsEngine({
+    store,
+    sessionKey: 'listenSession',
+    viewId: 'deck-listen',
+    showView,
+    isGeminiModeEnabled: geminiModeState.isEnabled,
+    buildCard: createListenCard,
+    dom: {
+        stage: listenShell.stage,
+        deckTitleEl: listenShell.deckTitleEl,
+        deckCounterEl: listenShell.deckCounterEl,
+        playStatusEl: listenShell.playStatusEl,
+        shuffleBtnEl: listenShell.shuffleBtnEl
+    }
+});
+
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;
+window.ListenEngine = ListenEngine;
 window.showView = showView;
 
 function bindDeckChrome(shell, engine) {
@@ -79,6 +103,7 @@ function bindDeckChrome(shell, engine) {
 
 bindDeckChrome(studyShell, Engine);
 bindDeckChrome(dictShell, DictationEngine);
+bindDeckChrome(listenShell, ListenEngine);
 
 function initDeckKeyboardShortcuts() {
     document.addEventListener(
@@ -86,7 +111,8 @@ function initDeckKeyboardShortcuts() {
         (e) => {
             const studyActive = document.getElementById('view-deck')?.classList.contains('active');
             const dictActive = document.getElementById('view-deck-dictation')?.classList.contains('active');
-            if (!studyActive && !dictActive) return;
+            const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+            if (!studyActive && !dictActive && !listenActive) return;
 
             const ctrl = e.ctrlKey && !e.metaKey;
 
@@ -104,6 +130,7 @@ function initDeckKeyboardShortcuts() {
 
             e.preventDefault();
             if (dictActive) DictationEngine.manualSwipe('left');
+            else if (listenActive) ListenEngine.manualSwipe('left');
             else Engine.manualSwipe('left');
         },
         true
@@ -143,11 +170,13 @@ function initAutoPlayForDeck(shell, engine) {
 function initAutoPlay() {
     initAutoPlayForDeck(studyShell, Engine);
     initAutoPlayForDeck(dictShell, DictationEngine);
+    initAutoPlayForDeck(listenShell, ListenEngine);
 }
 
 function bindShuffleButtons() {
     studyShell.shuffleBtnEl.addEventListener('click', () => Engine.shuffleDeck());
     dictShell.shuffleBtnEl.addEventListener('click', () => DictationEngine.shuffleDeck());
+    listenShell.shuffleBtnEl.addEventListener('click', () => ListenEngine.shuffleDeck());
 }
 
 function bootstrapApp() {
@@ -157,6 +186,7 @@ function bootstrapApp() {
             renderTopics(store.appData, {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
+                onListenClick: (deckName) => ListenEngine.initDeck(deckName),
                 onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName)
             });
             showView('topics');

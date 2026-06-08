@@ -93,7 +93,8 @@ body {
     flex-shrink: 0;
 }
 
-.topic-topic-shuffle-btn {
+.topic-topic-shuffle-btn,
+.topic-listen-btn {
     /* Reuses .shuffle-btn; keeps icon crisp on narrow rows */
     flex-shrink: 0;
 }
