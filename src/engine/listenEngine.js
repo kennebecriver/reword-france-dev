@@ -211,7 +211,8 @@ export function createListenEngine({
 
             const playPhrase = async (phrase, languageCode) => {
                 playStatusEl.textContent = 'Loading...';
-                const response = await fetchVoiceResponse(phrase, languageCode);
+                const phraseFirstPart = phrase.split('|')[0].trim();
+                const response = await fetchVoiceResponse(phraseFirstPart, languageCode);
                 if (generation !== playGeneration) return;
 
                 playStatusEl.textContent = '▶ Playing';
