@@ -12,7 +12,7 @@ export function createListenCard(data) {
 
     const primaryText = document.createElement('div');
     primaryText.className = 'card-text-primary';
-    primaryText.textContent = data.text2;
+    primaryText.textContent = data.text2.split('|')[0].trim();
 
     const eyeZone = document.createElement('div');
     eyeZone.className = 'card-eye-zone';
@@ -26,8 +26,12 @@ export function createListenCard(data) {
     secondaryText.className = 'card-text-secondary';
     secondaryText.textContent = data.text1;
 
+    const extraText = document.createElement('div');
+    extraText.className = 'card-text-extra';
+    extraText.textContent = data.text2.split('|')[1]?.trim() ?? '';
+    
     eyeZone.appendChild(revealBtn);
-    body.append(primaryText, eyeZone, secondaryText);
+    body.append(primaryText, eyeZone, secondaryText, extraText);
     card.appendChild(body);
 
     revealBtn.onpointerdown = (event) => event.stopPropagation();
@@ -39,7 +43,9 @@ export function createListenCard(data) {
 function revealHiddenPhrase(card) {
     const eyeZone = card.querySelector('.card-eye-zone');
     const secondaryText = card.querySelector('.card-text-secondary');
+    const extraText = card.querySelector('.card-text-extra');
 
     if (eyeZone) eyeZone.style.display = 'none';
     if (secondaryText) secondaryText.style.display = 'block';
+    if (extraText) secondaryText.style.display = 'block';
 }
