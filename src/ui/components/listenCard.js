@@ -47,5 +47,5 @@ function revealHiddenPhrase(card) {
 
     if (eyeZone) eyeZone.style.display = 'none';
     if (secondaryText) secondaryText.style.display = 'block';
-    if (extraText) secondaryText.style.display = 'block';
+    if (extraText) extraText.style.display = 'block';
 }
