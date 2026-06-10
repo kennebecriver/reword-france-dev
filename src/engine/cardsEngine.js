@@ -96,11 +96,13 @@ export function createCardsEngine({
                 return;
             }
 
-            const phrase = (top.dataset.t1 || '').trim();
+            let phrase = (top.dataset.t1 || '').trim();
             if (!phrase) {
                 playStatusEl.textContent = 'Empty phrase';
                 return;
             }
+
+            phrase = phrase.split('|')[0].trim();
 
             if (this._isPlaying) return;
             this._isPlaying = true;
