@@ -2,6 +2,10 @@ import { shuffleArrayInPlace } from './shuffleUtils.js';
 
 const TTS_BASE_URL = 'https://reword-france-463001342259.northamerica-northeast2.run.app/get_voice';
 
+// Global audio element for background playback (required for mobile Media Session)
+const bgAudio = new Audio();
+bgAudio.preload = 'auto';
+
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
 export function createListenEngine({
     store,
@@ -17,12 +21,10 @@ export function createListenEngine({
     let playGeneration = 0;
     let secondPlayTimer = null;
     let delayResolve = null;
-    let activeAudio = null;
     let autoPlayActive = false;
     let autoPlayPaused = false;
     let autoPlayTimer = null;
     let wakeLock = null;
-    let silenceLoop = null;
 
     const requestWakeLock = async () => {
         try {
@@ -33,33 +35,12 @@ export function createListenEngine({
         } catch (err) {
             console.warn('Wake Lock unavailable:', err);
         }
-        // Fallback: silent audio loop keeps the tab active on iOS
-        if (!silenceLoop) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                osc.frequency.value = 0;
-                osc.type = 'sine';
-                const gain = ctx.createGain();
-                gain.gain.value = 0;
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.start();
-                silenceLoop = { ctx, osc, gain };
-            } catch (e) {
-                // AudioContext not available
-            }
-        }
     };
 
     const releaseWakeLock = () => {
         if (wakeLock) {
             wakeLock.release().catch(() => {});
             wakeLock = null;
-        }
-        if (silenceLoop) {
-            try { silenceLoop.osc.stop(); silenceLoop.ctx.close(); } catch (e) { /* ignore */ }
-            silenceLoop = null;
         }
     };
 
@@ -68,13 +49,11 @@ export function createListenEngine({
         if (state === 'playing' && cardData) {
             try {
                 navigator.mediaSession.metadata = new MediaMetadata({
-                    title: cardData.text2 || '',
+                    title: cardData.text2 || 'Reword',
                     artist: 'Reword',
                     album: cardData.text1 || ''
                 });
-            } catch (e) {
-                // Some mobile browsers throw if called outside user gesture
-            }
+            } catch (e) { /* ignore */ }
             navigator.mediaSession.playbackState = 'playing';
         } else if (state === 'paused') {
             navigator.mediaSession.playbackState = 'paused';
@@ -84,7 +63,7 @@ export function createListenEngine({
         }
     };
 
-    // Re-register Media Session action handlers from within user gesture context.
+    // MUST be called synchronously inside a user gesture (e.g., button click)
     const registerMediaSessionHandlers = () => {
         if (!('mediaSession' in navigator)) return;
         try {
@@ -105,19 +84,16 @@ export function createListenEngine({
                 engine._goNextInternal();
             });
         } catch (e) {
-            // Some browsers require user gesture for setActionHandler
+            console.warn('Media Session registration failed:', e);
         }
     };
 
-    // Re-acquire Wake Lock when the screen comes back on (e.g. user wakes phone)
     const initVisibilityHandler = () => {
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && autoPlayActive && !autoPlayPaused) {
                 requestWakeLock();
-            }
-            if (document.hidden && autoPlayActive && !autoPlayPaused) {
-                // Screen going off while playing — wake lock should keep us alive,
-                // but if it fails the silent audio loop fallback helps on iOS
+                // Re-register handlers just in case the browser dropped them
+                registerMediaSessionHandlers();
             }
         });
     };
@@ -128,7 +104,8 @@ export function createListenEngine({
         playGeneration += 1;
         if (secondPlayTimer) { clearTimeout(secondPlayTimer); secondPlayTimer = null; }
         if (delayResolve) { delayResolve(false); delayResolve = null; }
-        if (activeAudio) { activeAudio.pause(); activeAudio = null; }
+        bgAudio.pause();
+        bgAudio.src = '';
     };
 
     const waitMs = (ms, generation) =>
@@ -168,19 +145,18 @@ export function createListenEngine({
             response.blob().then((audioBlob) => {
                 if (generation !== playGeneration) { resolve(); return; }
                 const audioUrl = URL.createObjectURL(audioBlob);
-                const audio = new Audio(audioUrl);
-                activeAudio = audio;
-                audio.onended = () => {
+                
+                // Use the global bgAudio element for background playback support
+                bgAudio.src = audioUrl;
+                bgAudio.onended = () => {
                     URL.revokeObjectURL(audioUrl);
-                    if (activeAudio === audio) activeAudio = null;
                     resolve();
                 };
-                audio.onerror = () => {
+                bgAudio.onerror = () => {
                     URL.revokeObjectURL(audioUrl);
-                    if (activeAudio === audio) activeAudio = null;
                     reject(new Error('Playback error'));
                 };
-                audio.play().catch(reject);
+                bgAudio.play().catch(reject);
             }).catch(reject);
         });
 
