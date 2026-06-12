@@ -51,8 +51,19 @@ export function createListenEngine({
                 navigator.mediaSession.metadata = new MediaMetadata({
                     title: cardData.text2 || 'Reword',
                     artist: 'Reword',
-                    album: cardData.text1 || ''
+                    album: cardData.text1 || '',
+                    artwork: [
+                        { src: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+                        { src: 'https://via.placeholder.com/512.png?text=Reword', sizes: '512x512', type: 'image/png' }
+                    ]
                 });
+                if ('setPositionState' in navigator.mediaSession) {
+                    navigator.mediaSession.setPositionState({
+                        duration: 10, // Dummy duration for TTS
+                        playbackRate: 1.0,
+                        position: 0
+                    });
+                }
             } catch (e) { /* ignore */ }
             navigator.mediaSession.playbackState = 'playing';
         } else if (state === 'paused') {
@@ -82,6 +93,13 @@ export function createListenEngine({
             });
             navigator.mediaSession.setActionHandler('nexttrack', () => {
                 engine._goNextInternal();
+            });
+            // Add seek handlers to satisfy Android Chrome requirements
+            navigator.mediaSession.setActionHandler('seekbackward', (details) => {
+                // Not applicable for TTS, but prevents warnings
+            });
+            navigator.mediaSession.setActionHandler('seekforward', (details) => {
+                // Not applicable for TTS, but prevents warnings
             });
         } catch (e) {
             console.warn('Media Session registration failed:', e);
