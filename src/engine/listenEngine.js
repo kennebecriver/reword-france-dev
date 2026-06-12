@@ -25,6 +25,7 @@ export function createListenEngine({
     let autoPlayPaused = false;
     let autoPlayTimer = null;
     let wakeLock = null;
+    let silenceTimerUrl = null;
 
     const requestWakeLock = async () => {
         try {
@@ -124,6 +125,30 @@ export function createListenEngine({
         if (delayResolve) { delayResolve(false); delayResolve = null; }
         bgAudio.pause();
         bgAudio.src = '';
+        if (silenceTimerUrl) { URL.revokeObjectURL(silenceTimerUrl); silenceTimerUrl = null; }
+    };
+
+    // Generate a silent WAV blob of given duration (ms). Used instead of setTimeout
+    // because bgAudio.onended fires reliably even when screen is off on Android.
+    const createSilenceBlob = (ms) => {
+        const sampleRate = 8000;
+        const numSamples = Math.floor(sampleRate * ms / 1000);
+        const numChannels = 1;
+        const bitsPerSample = 16;
+        const dataSize = numSamples * numChannels * (bitsPerSample / 8);
+        const buf = new ArrayBuffer(44 + dataSize);
+        const dv = new DataView(buf);
+        const w = (off, str) => { for (let i = 0; i < str.length; i++) dv.setUint8(off + i, str.charCodeAt(i)); };
+        w(0, 'RIFF'); dv.setUint32(4, 36 + dataSize, true);
+        w(8, 'WAVE'); w(12, 'fmt ');
+        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true);
+        dv.setUint16(22, numChannels, true); dv.setUint32(24, sampleRate, true);
+        dv.setUint32(28, sampleRate * numChannels * (bitsPerSample / 8), true);
+        dv.setUint16(32, numChannels * (bitsPerSample / 8), true);
+        dv.setUint16(34, bitsPerSample, true);
+        w(36, 'data'); dv.setUint32(40, dataSize, true);
+        // Samples are already zero (buffer initialized to 0)
+        return new Blob([buf], { type: 'audio/wav' });
     };
 
     const waitMs = (ms, generation) =>
@@ -132,12 +157,28 @@ export function createListenEngine({
                 delayResolve = null;
                 resolve(stillActive && generation === playGeneration);
             };
-            secondPlayTimer = setTimeout(() => {
-                secondPlayTimer = null;
+            // Use an audio-based timer: silent WAV plays via bgAudio,
+            // onended fires precisely even with screen off.
+            const blob = createSilenceBlob(ms);
+            const url = URL.createObjectURL(blob);
+            silenceTimerUrl = url;
+            bgAudio.src = url;
+            bgAudio.onended = () => {
+                URL.revokeObjectURL(url);
+                silenceTimerUrl = null;
                 const resolveDelay = delayResolve;
                 delayResolve = null;
                 if (resolveDelay) resolveDelay(true);
-            }, ms);
+            };
+            bgAudio.play().catch(() => {
+                // Fallback if play fails
+                secondPlayTimer = setTimeout(() => {
+                    secondPlayTimer = null;
+                    const resolveDelay = delayResolve;
+                    delayResolve = null;
+                    if (resolveDelay) resolveDelay(true);
+                }, ms);
+            });
         });
 
     const buildVoiceUrl = (phrase, languageCode) => {
@@ -312,12 +353,28 @@ export function createListenEngine({
         _scheduleNextAuto() {
             if (!autoPlayActive || autoPlayPaused) return;
             clearTimeout(autoPlayTimer);
+            if (silenceTimerUrl) { URL.revokeObjectURL(silenceTimerUrl); silenceTimerUrl = null; }
             const deck = store[sessionKey];
             if (!deck?.length || currentIndex >= deck.length - 1) { engine.stopAutoPlay(); return; }
-            autoPlayTimer = setTimeout(() => {
+            // Audio-based timer instead of setTimeout — onended fires reliably with screen off
+            const blob = createSilenceBlob(3000);
+            const url = URL.createObjectURL(blob);
+            silenceTimerUrl = url;
+            bgAudio.src = url;
+            bgAudio.onended = () => {
+                URL.revokeObjectURL(url);
+                silenceTimerUrl = null;
                 if (!autoPlayActive || autoPlayPaused) return;
                 engine._goNextInternal();
-            }, 3000);
+            };
+            bgAudio.play().catch(() => {
+                // Fallback to setTimeout if audio play fails
+                autoPlayTimer = setTimeout(() => {
+                    autoPlayTimer = null;
+                    if (!autoPlayActive || autoPlayPaused) return;
+                    engine._goNextInternal();
+                }, 3000);
+            });
         },
 
         _onCardRendered() {
