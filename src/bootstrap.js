@@ -157,12 +157,18 @@ function initDeckKeyboardShortcuts() {
     document.addEventListener(
         'keydown',
         (e) => {
+            const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
             const studyActive = document.getElementById('view-deck')?.classList.contains('active');
             const dictActive = document.getElementById('view-deck-dictation')?.classList.contains('active');
-            const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
             if (!studyActive && !dictActive && !listenActive) return;
 
             const ctrl = e.ctrlKey && !e.metaKey;
+
+            // Media keys routed to Media Session API instead (handles headphones)
+            if (listenActive && (e.key === 'MediaPlayPause' || e.key === 'Play' || e.key === 'Pause')) {
+                e.preventDefault();
+                return;
+            }
 
             if (listenActive && e.key === 'ArrowLeft') {
                 e.preventDefault();
@@ -173,15 +179,6 @@ function initDeckKeyboardShortcuts() {
             if (listenActive && e.key === 'ArrowRight') {
                 e.preventDefault();
                 ListenEngine.goNext();
-                return;
-            }
-
-            // Media keys (play/pause on headphones)
-            if (listenActive && (e.key === 'MediaPlayPause' || e.key === 'Play' || e.key === 'Pause')) {
-                e.preventDefault();
-                if (ListenEngine.isAutoPlaying()) {
-                    ListenEngine.toggleAutoPlayPause();
-                }
                 return;
             }
 
@@ -203,39 +200,6 @@ function initDeckKeyboardShortcuts() {
         },
         true
     );
-}
-
-function initMediaSession() {
-    if (!('mediaSession' in navigator)) return;
-
-    navigator.mediaSession.setActionHandler('play', () => {
-        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
-        if (!listenActive) return;
-        if (!ListenEngine.isAutoPlaying()) return;
-        if (ListenEngine.isAutoPlayPaused()) {
-            ListenEngine.toggleAutoPlayPause();
-        }
-    });
-
-    navigator.mediaSession.setActionHandler('pause', () => {
-        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
-        if (!listenActive) return;
-        if (ListenEngine.isAutoPlaying()) {
-            ListenEngine.toggleAutoPlayPause();
-        }
-    });
-
-    navigator.mediaSession.setActionHandler('previoustrack', () => {
-        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
-        if (!listenActive) return;
-        ListenEngine.goBack();
-    });
-
-    navigator.mediaSession.setActionHandler('nexttrack', () => {
-        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
-        if (!listenActive) return;
-        ListenEngine.goNext();
-    });
 }
 
 function initAutoPlayForDeck(shell, engine) {
@@ -303,7 +267,6 @@ function bootstrapApp() {
     bindShuffleButtons();
     initAutoPlay();
     initDeckKeyboardShortcuts();
-    initMediaSession();
 }
 
 bootstrapApp();
