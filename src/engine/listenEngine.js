@@ -5,6 +5,12 @@ const TTS_BASE_URL = 'https://reword-france-463001342259.northamerica-northeast2
 // Global audio element for background playback (required for mobile Media Session)
 const bgAudio = new Audio();
 bgAudio.preload = 'auto';
+bgAudio.volume = 1.0;
+
+// Dedicated silent audio element for timers — never interfere with TTS playback
+const timerAudio = new Audio();
+timerAudio.preload = 'auto';
+timerAudio.volume = 0;
 
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
 export function createListenEngine({
@@ -55,7 +61,7 @@ export function createListenEngine({
                     album: cardData.text1 || '',
                     artwork: [
                         { src: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
-                        { src: 'https://via.placeholder.com/512.png?text=Reword', sizes: '512x512', type: 'image/png' }
+                        { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%231a1a2e' rx='60'/%3E%3Ctext x='256' y='300' text-anchor='middle' fill='%23fff' font-size='280' font-family='sans-serif'%3ER%3C/text%3E%3C/svg%3E", sizes: '512x512', type: 'image/svg+xml' }
                     ]
                 });
                 if ('setPositionState' in navigator.mediaSession) {
@@ -124,7 +130,10 @@ export function createListenEngine({
         if (secondPlayTimer) { clearTimeout(secondPlayTimer); secondPlayTimer = null; }
         if (delayResolve) { delayResolve(false); delayResolve = null; }
         bgAudio.pause();
-        bgAudio.src = '';
+        // Don't clear bgAudio.src to empty — Android drops media session.
+        // Leave last src; will be replaced on next playActiveCard call.
+        timerAudio.pause();
+        timerAudio.src = '';
         if (silenceTimerUrl) { URL.revokeObjectURL(silenceTimerUrl); silenceTimerUrl = null; }
     };
 
@@ -157,20 +166,19 @@ export function createListenEngine({
                 delayResolve = null;
                 resolve(stillActive && generation === playGeneration);
             };
-            // Use an audio-based timer: silent WAV plays via bgAudio,
-            // onended fires precisely even with screen off.
+            // Use timerAudio (dedicated element) — onended fires precisely even with screen off.
             const blob = createSilenceBlob(ms);
             const url = URL.createObjectURL(blob);
             silenceTimerUrl = url;
-            bgAudio.src = url;
-            bgAudio.onended = () => {
+            timerAudio.src = url;
+            timerAudio.onended = () => {
                 URL.revokeObjectURL(url);
                 silenceTimerUrl = null;
                 const resolveDelay = delayResolve;
                 delayResolve = null;
                 if (resolveDelay) resolveDelay(true);
             };
-            bgAudio.play().catch(() => {
+            timerAudio.play().catch(() => {
                 // Fallback if play fails
                 secondPlayTimer = setTimeout(() => {
                     secondPlayTimer = null;
@@ -324,7 +332,8 @@ export function createListenEngine({
             if (autoPlayPaused) {
                 autoPlayPaused = false;
                 cancelPlaySequence();
-                updateMediaSession('paused');
+                const top = stage.querySelector('.card-active');
+                updateMediaSession('playing', top ? { text1: top.dataset.t1, text2: top.dataset.t2 } : null);
                 if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, false);
                 engine.playActiveCard().then(() => engine._scheduleNextAuto());
             } else {
@@ -356,18 +365,18 @@ export function createListenEngine({
             if (silenceTimerUrl) { URL.revokeObjectURL(silenceTimerUrl); silenceTimerUrl = null; }
             const deck = store[sessionKey];
             if (!deck?.length || currentIndex >= deck.length - 1) { engine.stopAutoPlay(); return; }
-            // Audio-based timer instead of setTimeout — onended fires reliably with screen off
+            // Use timerAudio (dedicated) — onended fires reliably with screen off
             const blob = createSilenceBlob(3000);
             const url = URL.createObjectURL(blob);
             silenceTimerUrl = url;
-            bgAudio.src = url;
-            bgAudio.onended = () => {
+            timerAudio.src = url;
+            timerAudio.onended = () => {
                 URL.revokeObjectURL(url);
                 silenceTimerUrl = null;
                 if (!autoPlayActive || autoPlayPaused) return;
                 engine._goNextInternal();
             };
-            bgAudio.play().catch(() => {
+            timerAudio.play().catch(() => {
                 // Fallback to setTimeout if audio play fails
                 autoPlayTimer = setTimeout(() => {
                     autoPlayTimer = null;
