@@ -122,6 +122,7 @@ export function createAutoPlay(api) {
     let _paused = false;
     let _gen = 0;
     let _wakeLock = null;
+    let _currentUrl = null; // Track current blob URL to prevent memory leaks
 
     // ─── Wake Lock ────────────────────────────────────────────────────
 
@@ -169,8 +170,9 @@ export function createAutoPlay(api) {
     const _registerHandlers = () => {
         if (!('mediaSession' in navigator)) return;
         try {
-            navigator.mediaSession.setActionHandler('play', () => { if (_active && _paused) togglePause(); });
-            navigator.mediaSession.setActionHandler('pause', () => { if (_active && !_paused) togglePause(); });
+            navigator.mediaSession.setActionHandler('play', () => { if (_active && _paused) autoPlay.togglePause(); });
+            navigator.mediaSession.setActionHandler('pause', () => { if (_active && !_paused) autoPlay.togglePause(); });
+            navigator.mediaSession.setActionHandler('stop', () => { autoPlay.stop(); });
             navigator.mediaSession.setActionHandler('previoustrack', () => { api.goBackInternal(); });
             navigator.mediaSession.setActionHandler('nexttrack', () => { api.goNextInternal(); });
             navigator.mediaSession.setActionHandler('seekbackward', () => {});
@@ -267,12 +269,26 @@ export function createAutoPlay(api) {
     }
 
     function _playBlob(blob) {
-        const url = URL.createObjectURL(blob);
-        bgAudio.src = url;
+        // Revoke previous URL to prevent memory leaks
+        if (_currentUrl) {
+            URL.revokeObjectURL(_currentUrl);
+            _currentUrl = null;
+        }
+        _currentUrl = URL.createObjectURL(blob);
+        bgAudio.src = _currentUrl;
         return new Promise((resolve) => {
-            bgAudio.onended = () => { URL.revokeObjectURL(url); resolve(); };
-            bgAudio.onerror = () => { URL.revokeObjectURL(url); resolve(); };
-            bgAudio.play().catch(() => resolve());
+            bgAudio.onended = () => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            };
+            bgAudio.onerror = () => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            };
+            bgAudio.play().catch(() => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            });
         });
     }
 
@@ -310,7 +326,9 @@ export function createAutoPlay(api) {
         start() {
             if (_active) return;
             _active = true; _paused = false; _gen++;
-            bgAudio.pause(); bgAudio.src = '';
+            bgAudio.pause();
+            if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+            bgAudio.src = '';
             _requestWakeLock();
             _registerHandlers();
             _updateMediaSession('paused');
@@ -341,7 +359,9 @@ export function createAutoPlay(api) {
         stop() {
             if (!_active) return;
             _active = false; _paused = false; _gen++;
-            bgAudio.pause(); bgAudio.src = '';
+            bgAudio.pause();
+            if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+            bgAudio.src = '';
             _releaseWakeLock();
             _updateMediaSession('none');
             api.onStateChange(false, false);
