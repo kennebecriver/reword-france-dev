@@ -21,6 +21,108 @@ export function createListenEngine({
     let autoPlayActive = false;
     let autoPlayPaused = false;
     let autoPlayTimer = null;
+    let wakeLock = null;
+    let silenceLoop = null;
+
+    const requestWakeLock = async () => {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                wakeLock.addEventListener('release', () => { wakeLock = null; });
+            }
+        } catch (err) {
+            console.warn('Wake Lock unavailable:', err);
+        }
+        // Fallback: silent audio loop keeps the tab active on iOS
+        if (!silenceLoop) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                osc.frequency.value = 0;
+                osc.type = 'sine';
+                const gain = ctx.createGain();
+                gain.gain.value = 0;
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                silenceLoop = { ctx, osc, gain };
+            } catch (e) {
+                // AudioContext not available
+            }
+        }
+    };
+
+    const releaseWakeLock = () => {
+        if (wakeLock) {
+            wakeLock.release().catch(() => {});
+            wakeLock = null;
+        }
+        if (silenceLoop) {
+            try { silenceLoop.osc.stop(); silenceLoop.ctx.close(); } catch (e) { /* ignore */ }
+            silenceLoop = null;
+        }
+    };
+
+    const updateMediaSession = (state, cardData) => {
+        if (!('mediaSession' in navigator)) return;
+        if (state === 'playing' && cardData) {
+            try {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: cardData.text2 || '',
+                    artist: 'Reword',
+                    album: cardData.text1 || ''
+                });
+            } catch (e) {
+                // Some mobile browsers throw if called outside user gesture
+            }
+            navigator.mediaSession.playbackState = 'playing';
+        } else if (state === 'paused') {
+            navigator.mediaSession.playbackState = 'paused';
+        } else {
+            try { navigator.mediaSession.metadata = null; } catch (e) { /* ignore */ }
+            navigator.mediaSession.playbackState = 'none';
+        }
+    };
+
+    // Re-register Media Session action handlers from within user gesture context.
+    const registerMediaSessionHandlers = () => {
+        if (!('mediaSession' in navigator)) return;
+        try {
+            navigator.mediaSession.setActionHandler('play', () => {
+                if (autoPlayActive && autoPlayPaused) {
+                    engine.toggleAutoPlayPause();
+                }
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+                if (autoPlayActive && !autoPlayPaused) {
+                    engine.toggleAutoPlayPause();
+                }
+            });
+            navigator.mediaSession.setActionHandler('previoustrack', () => {
+                engine._goBackInternal();
+            });
+            navigator.mediaSession.setActionHandler('nexttrack', () => {
+                engine._goNextInternal();
+            });
+        } catch (e) {
+            // Some browsers require user gesture for setActionHandler
+        }
+    };
+
+    // Re-acquire Wake Lock when the screen comes back on (e.g. user wakes phone)
+    const initVisibilityHandler = () => {
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && autoPlayActive && !autoPlayPaused) {
+                requestWakeLock();
+            }
+            if (document.hidden && autoPlayActive && !autoPlayPaused) {
+                // Screen going off while playing — wake lock should keep us alive,
+                // but if it fails the silent audio loop fallback helps on iOS
+            }
+        });
+    };
+
+    initVisibilityHandler();
 
     const cancelPlaySequence = () => {
         playGeneration += 1;
@@ -175,6 +277,9 @@ export function createListenEngine({
             autoPlayActive = true;
             autoPlayPaused = false;
             cancelPlaySequence();
+            requestWakeLock();
+            registerMediaSessionHandlers();
+            updateMediaSession('paused');
             if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, false);
             engine.playActiveCard().then(() => engine._scheduleNextAuto());
         },
@@ -184,12 +289,14 @@ export function createListenEngine({
             if (autoPlayPaused) {
                 autoPlayPaused = false;
                 cancelPlaySequence();
+                updateMediaSession('paused');
                 if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, false);
                 engine.playActiveCard().then(() => engine._scheduleNextAuto());
             } else {
                 autoPlayPaused = true;
                 clearTimeout(autoPlayTimer);
                 cancelPlaySequence();
+                updateMediaSession('paused');
                 if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, true);
             }
         },
@@ -200,6 +307,8 @@ export function createListenEngine({
             autoPlayActive = false;
             autoPlayPaused = false;
             cancelPlaySequence();
+            releaseWakeLock();
+            updateMediaSession('none');
             if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(false, false);
         },
 
@@ -219,6 +328,10 @@ export function createListenEngine({
 
         _onCardRendered() {
             if (!autoPlayActive || autoPlayPaused) return;
+            const top = stage.querySelector('.card-active');
+            if (top) {
+                updateMediaSession('playing', { text1: top.dataset.t1, text2: top.dataset.t2 });
+            }
             engine.playActiveCard().then(() => engine._scheduleNextAuto());
         },
 
