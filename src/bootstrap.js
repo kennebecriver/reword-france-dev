@@ -129,20 +129,19 @@ function setOnAirButtonState(isActive, isPaused) {
 const listenAutoPlay = createAutoPlay({
     getCurrentIndex: () => {
         const deck = store.listenSession;
-        const top = listenShell.stage.querySelector('.card-active');
-        if (!deck || !top) return 0;
-        for (let i = 0; i < deck.length; i++) {
-            if (deck[i].text1 === top.dataset.t1) return i;
-        }
-        return 0;
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (!deck || !activeItem) return 0;
+        return parseInt(activeItem.dataset.index, 10) || 0;
     },
     getDeckLength: () => store.listenSession.length,
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
     fetchTTS,
     getCardData: () => {
-        const top = listenShell.stage.querySelector('.card-active');
-        return top ? { text1: top.dataset.t1, text2: top.dataset.t2 } : null;
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (!activeItem) return null;
+        const card = activeItem.querySelector('.listen-card-inner');
+        return card ? { text1: card.dataset.t1, text2: card.dataset.t2 } : null;
     },
     onStateChange: setOnAirButtonState,
     onStepStart: () => {
