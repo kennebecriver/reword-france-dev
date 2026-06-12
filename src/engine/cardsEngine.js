@@ -164,7 +164,7 @@ export function createCardsEngine({
             el.style.opacity = '0';
 
             if (dir === 'right') {
-                store[sessionKey].push({ text1: el.dataset.t1, text2: el.dataset.t2 });
+                store[sessionKey].push({ text1: el.dataset.t1, text2: el.dataset.t2, text3: el.dataset.t3 });
             }
 
             setTimeout(() => {

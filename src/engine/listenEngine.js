@@ -10,6 +10,7 @@ export function createListenEngine({
     showView,
     buildCard,
     onAfterRender,
+    onAutoPlayStateChange,
     dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl, backNavBtn, nextNavBtn }
 }) {
     let currentIndex = 0;
@@ -17,21 +18,15 @@ export function createListenEngine({
     let secondPlayTimer = null;
     let delayResolve = null;
     let activeAudio = null;
+    let autoPlayActive = false;
+    let autoPlayPaused = false;
+    let autoPlayTimer = null;
 
     const cancelPlaySequence = () => {
         playGeneration += 1;
-        if (secondPlayTimer) {
-            clearTimeout(secondPlayTimer);
-            secondPlayTimer = null;
-        }
-        if (delayResolve) {
-            delayResolve(false);
-            delayResolve = null;
-        }
-        if (activeAudio) {
-            activeAudio.pause();
-            activeAudio = null;
-        }
+        if (secondPlayTimer) { clearTimeout(secondPlayTimer); secondPlayTimer = null; }
+        if (delayResolve) { delayResolve(false); delayResolve = null; }
+        if (activeAudio) { activeAudio.pause(); activeAudio = null; }
     };
 
     const waitMs = (ms, generation) =>
@@ -49,10 +44,7 @@ export function createListenEngine({
         });
 
     const buildVoiceUrl = (phrase, languageCode) => {
-        const params = new URLSearchParams({
-            phrase,
-            language_code: languageCode
-        });
+        const params = new URLSearchParams({ phrase, language_code: languageCode });
         return `${TTS_BASE_URL}?${params.toString()}`;
     };
 
@@ -60,104 +52,93 @@ export function createListenEngine({
         const cacheKey = `tts-listen-${languageCode}-${phrase}`;
         const cache = await caches.open('tts-audio-cache');
         const cached = await cache.match(cacheKey);
-
         if (cached) return cached;
 
         const response = await fetch(buildVoiceUrl(phrase, languageCode));
-        if (!response.ok) {
-            throw new Error(`Server returned ${response.status}`);
-        }
-
+        if (!response.ok) throw new Error(`Server returned ${response.status}`);
         await cache.put(cacheKey, response.clone());
         return response;
     };
 
     const playVoiceResponse = (response, generation) =>
         new Promise((resolve, reject) => {
-            if (generation !== playGeneration) {
-                resolve();
-                return;
-            }
-
-            response
-                .blob()
-                .then((audioBlob) => {
-                    if (generation !== playGeneration) {
-                        resolve();
-                        return;
-                    }
-
-                    const audioUrl = URL.createObjectURL(audioBlob);
-                    const audio = new Audio(audioUrl);
-                    activeAudio = audio;
-
-                    audio.onended = () => {
-                        URL.revokeObjectURL(audioUrl);
-                        if (activeAudio === audio) activeAudio = null;
-                        resolve();
-                    };
-
-                    audio.onerror = () => {
-                        URL.revokeObjectURL(audioUrl);
-                        if (activeAudio === audio) activeAudio = null;
-                        reject(new Error('Playback error'));
-                    };
-
-                    audio.play().catch(reject);
-                })
-                .catch(reject);
+            if (generation !== playGeneration) { resolve(); return; }
+            response.blob().then((audioBlob) => {
+                if (generation !== playGeneration) { resolve(); return; }
+                const audioUrl = URL.createObjectURL(audioBlob);
+                const audio = new Audio(audioUrl);
+                activeAudio = audio;
+                audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    if (activeAudio === audio) activeAudio = null;
+                    resolve();
+                };
+                audio.onerror = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    if (activeAudio === audio) activeAudio = null;
+                    reject(new Error('Playback error'));
+                };
+                audio.play().catch(reject);
+            }).catch(reject);
         });
 
-    return {
+    const engine = {
         initDeck(name) {
-            cancelPlaySequence();
-            this._isPlaying = false;
+            engine.stopAutoPlay();
+            engine._isPlaying = false;
             store[sessionKey] = [...store.appData[name]];
             currentIndex = 0;
             deckTitleEl.textContent = name;
-            this.renderCard();
+            engine.renderCard();
             showView(viewId);
         },
 
         renderCard() {
             cancelPlaySequence();
-            this._isPlaying = false;
+            engine._isPlaying = false;
 
             const deck = store[sessionKey];
-            if (!deck.length) {
-                showView('topics');
-                return;
-            }
+            if (!deck.length) { showView('topics'); return; }
 
             currentIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
             const card = buildCard(deck[currentIndex]);
             card.className = 'card card-active animating';
             stage.innerHTML = '';
             stage.appendChild(card);
-            this.updateCounter();
-            this.updateNavButtons();
-
+            engine.updateCounter();
+            engine.updateNavButtons();
             if (typeof onAfterRender === 'function') onAfterRender();
+            engine._onCardRendered();
         },
 
         goNext() {
+            engine.stopAutoPlay();
+            engine._goNextInternal();
+        },
+
+        /** Internal: go next without stopping auto-play. */
+        _goNextInternal() {
             const deck = store[sessionKey];
             if (currentIndex < deck.length - 1) {
                 currentIndex += 1;
-                this.renderCard();
+                engine.renderCard();
             }
         },
 
         goBack() {
+            engine.stopAutoPlay();
+            engine._goBackInternal();
+        },
+
+        /** Internal: go back without stopping auto-play. */
+        _goBackInternal() {
             if (currentIndex > 0) {
                 currentIndex -= 1;
-                this.renderCard();
+                engine.renderCard();
             }
         },
 
-        canGoBack() {
-            return currentIndex > 0;
-        },
+        canGoBack() { return currentIndex > 0; },
 
         canGoNext() {
             const deck = store[sessionKey];
@@ -165,8 +146,8 @@ export function createListenEngine({
         },
 
         updateNavButtons() {
-            if (backNavBtn) backNavBtn.disabled = !this.canGoBack();
-            if (nextNavBtn) nextNavBtn.disabled = !this.canGoNext();
+            if (backNavBtn) backNavBtn.disabled = !engine.canGoBack();
+            if (nextNavBtn) nextNavBtn.disabled = !engine.canGoNext();
         },
 
         updateCounter() {
@@ -177,15 +158,68 @@ export function createListenEngine({
         shuffleDeck() {
             const deck = store[sessionKey];
             if (!deck || deck.length < 2) return;
-
+            engine.stopAutoPlay();
             shuffleArrayInPlace(deck);
             currentIndex = 0;
-            this.renderCard();
-
+            engine.renderCard();
             if (shuffleBtnEl) {
                 shuffleBtnEl.classList.add('shuffling');
                 setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
             }
+        },
+
+        // --- Auto-play (On Air) ---
+
+        startAutoPlay() {
+            if (autoPlayActive) return;
+            autoPlayActive = true;
+            autoPlayPaused = false;
+            cancelPlaySequence();
+            if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, false);
+            engine.playActiveCard().then(() => engine._scheduleNextAuto());
+        },
+
+        toggleAutoPlayPause() {
+            if (!autoPlayActive) return;
+            if (autoPlayPaused) {
+                autoPlayPaused = false;
+                cancelPlaySequence();
+                if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, false);
+                engine.playActiveCard().then(() => engine._scheduleNextAuto());
+            } else {
+                autoPlayPaused = true;
+                clearTimeout(autoPlayTimer);
+                cancelPlaySequence();
+                if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(true, true);
+            }
+        },
+
+        stopAutoPlay() {
+            if (!autoPlayActive) return;
+            clearTimeout(autoPlayTimer);
+            autoPlayActive = false;
+            autoPlayPaused = false;
+            cancelPlaySequence();
+            if (typeof onAutoPlayStateChange === 'function') onAutoPlayStateChange(false, false);
+        },
+
+        isAutoPlaying() { return autoPlayActive && !autoPlayPaused; },
+        isAutoPlayPaused() { return autoPlayActive && autoPlayPaused; },
+
+        _scheduleNextAuto() {
+            if (!autoPlayActive || autoPlayPaused) return;
+            clearTimeout(autoPlayTimer);
+            const deck = store[sessionKey];
+            if (!deck?.length || currentIndex >= deck.length - 1) { engine.stopAutoPlay(); return; }
+            autoPlayTimer = setTimeout(() => {
+                if (!autoPlayActive || autoPlayPaused) return;
+                engine._goNextInternal();
+            }, 3000);
+        },
+
+        _onCardRendered() {
+            if (!autoPlayActive || autoPlayPaused) return;
+            engine.playActiveCard().then(() => engine._scheduleNextAuto());
         },
 
         async playActiveCard() {
@@ -207,7 +241,7 @@ export function createListenEngine({
 
             cancelPlaySequence();
             const generation = playGeneration;
-            this._isPlaying = true;
+            engine._isPlaying = true;
 
             const playPhrase = async (phrase, languageCode) => {
                 playStatusEl.textContent = 'Loading...';
@@ -224,24 +258,22 @@ export function createListenEngine({
                     await playPhrase(visiblePhrase, 'ru-RU');
                     if (generation !== playGeneration) return;
                 }
-
                 if (hiddenPhrase) {
                     const shouldContinue = await waitMs(3000, generation);
                     if (!shouldContinue) return;
-
                     await playPhrase(hiddenPhrase, 'fr-FR');
                 }
             } catch (error) {
                 console.error('Play error:', error);
-                if (generation === playGeneration) {
-                    playStatusEl.textContent = 'Failed to play';
-                }
+                if (generation === playGeneration) playStatusEl.textContent = 'Failed to play';
             } finally {
                 if (generation === playGeneration) {
-                    this._isPlaying = false;
+                    engine._isPlaying = false;
                     playStatusEl.textContent = 'Ready';
                 }
             }
         }
     };
+
+    return engine;
 }

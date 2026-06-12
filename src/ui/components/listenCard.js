@@ -6,13 +6,14 @@ export function createListenCard(data) {
     card.className = 'card card-next';
     card.dataset.t1 = data.text1;
     card.dataset.t2 = data.text2;
+    card.dataset.t3 = data.text3 ?? '';
 
     const body = document.createElement('div');
     body.className = 'card-body';
 
     const primaryText = document.createElement('div');
     primaryText.className = 'card-text-primary';
-    primaryText.textContent = data.text2.split('|')[0].trim();
+    primaryText.textContent = data.text2;
 
     const eyeZone = document.createElement('div');
     eyeZone.className = 'card-eye-zone';
@@ -28,7 +29,7 @@ export function createListenCard(data) {
 
     const extraText = document.createElement('div');
     extraText.className = 'card-text-extra';
-    extraText.textContent = data.text2.split('|')[1]?.trim() ?? '';
+    extraText.textContent = data.text3 ?? '';
     
     eyeZone.appendChild(revealBtn);
     body.append(primaryText, eyeZone, secondaryText, extraText);

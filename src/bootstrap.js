@@ -21,9 +21,9 @@ if (!studyViewEl || !dictationViewEl || !listenViewEl) {
     throw new Error('bootstrap: deck view roots missing');
 }
 
-const studyShell = mountDeckShell(studyViewEl, { idSuffix: '' });
-const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-' });
-const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-' });
+const studyShell = mountDeckShell(studyViewEl, { idSuffix: '', hideOnAir: true });
+const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-', hideOnAir: true });
+const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-', hideAutoPlay: true });
 
 listenShell.doneBtn.textContent = 'Back';
 listenShell.doneBtn.classList.remove('btn-done');
@@ -96,6 +96,22 @@ const ListenEngine = createListenEngine({
     viewId: 'deck-listen',
     showView,
     buildCard: createListenCard,
+    onAutoPlayStateChange(isActive, isPaused) {
+        const btn = listenShell.onairBtnEl;
+        if (isActive && !isPaused) {
+            btn.textContent = '⏹';
+            btn.classList.add('onair-active');
+            btn.title = 'Stop auto-play';
+        } else if (isActive && isPaused) {
+            btn.textContent = '⏸';
+            btn.classList.add('onair-active');
+            btn.title = 'Resume auto-play';
+        } else {
+            btn.textContent = '▶';
+            btn.classList.remove('onair-active');
+            btn.title = 'Auto-play mode';
+        }
+    },
     dom: {
         stage: listenShell.stage,
         deckTitleEl: listenShell.deckTitleEl,
@@ -124,6 +140,13 @@ function bindListenChrome(shell, engine) {
     shell.doneBtn.addEventListener('click', () => engine.goBack());
     shell.playBtn.addEventListener('click', () => engine.playActiveCard());
     shell.repeatBtn.addEventListener('click', () => engine.goNext());
+    shell.onairBtnEl.addEventListener('click', () => {
+        if (engine.isAutoPlaying() || engine.isAutoPlayPaused()) {
+            engine.toggleAutoPlayPause();
+        } else {
+            engine.startAutoPlay();
+        }
+    });
 }
 
 bindDeckChrome(studyShell, Engine);
@@ -153,6 +176,15 @@ function initDeckKeyboardShortcuts() {
                 return;
             }
 
+            // Media keys (play/pause on headphones)
+            if (listenActive && (e.key === 'MediaPlayPause' || e.key === 'Play' || e.key === 'Pause')) {
+                e.preventDefault();
+                if (ListenEngine.isAutoPlaying()) {
+                    ListenEngine.toggleAutoPlayPause();
+                }
+                return;
+            }
+
             if (dictActive && ctrl && e.key === 'Enter') {
                 e.preventDefault();
                 DictationEngine.manualSwipe('left');
@@ -171,6 +203,39 @@ function initDeckKeyboardShortcuts() {
         },
         true
     );
+}
+
+function initMediaSession() {
+    if (!('mediaSession' in navigator)) return;
+
+    navigator.mediaSession.setActionHandler('play', () => {
+        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+        if (!listenActive) return;
+        if (!ListenEngine.isAutoPlaying()) return;
+        if (ListenEngine.isAutoPlayPaused()) {
+            ListenEngine.toggleAutoPlayPause();
+        }
+    });
+
+    navigator.mediaSession.setActionHandler('pause', () => {
+        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+        if (!listenActive) return;
+        if (ListenEngine.isAutoPlaying()) {
+            ListenEngine.toggleAutoPlayPause();
+        }
+    });
+
+    navigator.mediaSession.setActionHandler('previoustrack', () => {
+        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+        if (!listenActive) return;
+        ListenEngine.goBack();
+    });
+
+    navigator.mediaSession.setActionHandler('nexttrack', () => {
+        const listenActive = document.getElementById('view-deck-listen')?.classList.contains('active');
+        if (!listenActive) return;
+        ListenEngine.goNext();
+    });
 }
 
 function initAutoPlayForDeck(shell, engine) {
@@ -203,39 +268,10 @@ function initAutoPlayForDeck(shell, engine) {
     });
 }
 
-function initAutoPlayForListen(shell, engine) {
-    const toggle = shell.autoPlayToggle;
-    const originalRender = engine.renderCard.bind(engine);
-
-    engine.renderCard = function wrappedRender() {
-        originalRender();
-
-        if (toggle.checked) {
-            requestAnimationFrame(() => {
-                setTimeout(() => {
-                    const activeCard = shell.stage.querySelector('.card-active');
-                    if (activeCard && !engine._isPlaying) {
-                        engine.playActiveCard();
-                    }
-                }, 150);
-            });
-        }
-    };
-
-    toggle.addEventListener('change', (event) => {
-        if (/** @type {HTMLInputElement} */ (event.target).checked) {
-            const activeCard = shell.stage.querySelector('.card-active');
-            if (activeCard && !engine._isPlaying) {
-                setTimeout(() => engine.playActiveCard(), 50);
-            }
-        }
-    });
-}
-
 function initAutoPlay() {
     initAutoPlayForDeck(studyShell, Engine);
     initAutoPlayForDeck(dictShell, DictationEngine);
-    initAutoPlayForListen(listenShell, ListenEngine);
+    // Listen mode uses On Air button instead of the old auto-play toggle
 }
 
 function bindShuffleButtons() {
@@ -267,6 +303,7 @@ function bootstrapApp() {
     bindShuffleButtons();
     initAutoPlay();
     initDeckKeyboardShortcuts();
+    initMediaSession();
 }
 
 bootstrapApp();
