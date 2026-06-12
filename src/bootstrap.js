@@ -2,7 +2,7 @@ import { getRuntimeConfig, initGeminiModeToggle } from './config/runtime.js';
 import { createSheetsApi } from './api/sheetsApi.js';
 import { createCardsEngine } from './engine/cardsEngine.js';
 import { createListenEngine } from './engine/listenEngine.js';
-import { createAutoPlay } from './engine/autoPlay.js';
+import { createAutoPlay, fetchTTS } from './engine/autoPlay.js';
 import { store } from './state/store.js';
 import { renderTopics } from './ui/topics.js';
 import { showView } from './ui/views.js';
@@ -140,13 +140,15 @@ const listenAutoPlay = createAutoPlay({
     getDeckLength: () => store.listenSession.length,
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
-    playActiveCard: () => ListenEngine.playActiveCard(),
-    renderCard: () => ListenEngine.renderCard(),
+    fetchTTS,
     getCardData: () => {
         const top = listenShell.stage.querySelector('.card-active');
         return top ? { text1: top.dataset.t1, text2: top.dataset.t2 } : null;
     },
-    onStateChange: setOnAirButtonState
+    onStateChange: setOnAirButtonState,
+    onStepStart: () => {
+        // blink play status if needed
+    }
 });
 
 // Attach auto-play hooks to ListenEngine

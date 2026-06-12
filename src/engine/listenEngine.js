@@ -1,7 +1,7 @@
 import { shuffleArrayInPlace } from './shuffleUtils.js';
-import { bgAudio, createSilenceBlob } from './autoPlay.js';
+import { bgAudio, fetchTTS } from './autoPlay.js';
 
-const TTS_BASE_URL = 'https://reword-france-463001342259.northamerica-northeast2.run.app/get_voice';
+// Index-based deck navigation for Listen mode (no swipe queue / discard).
 
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
 export function createListenEngine({
@@ -15,82 +15,19 @@ export function createListenEngine({
 }) {
     let currentIndex = 0;
     let playGeneration = 0;
-    let secondPlayTimer = null;
-    let delayResolve = null;
 
     const cancelPlaySequence = () => {
         playGeneration += 1;
-        if (secondPlayTimer) { clearTimeout(secondPlayTimer); secondPlayTimer = null; }
-        if (delayResolve) { delayResolve(false); delayResolve = null; }
         bgAudio.pause();
-        // Don't clear bgAudio.src — Android drops media session
     };
 
     const waitMs = (ms, generation) =>
         new Promise((resolve) => {
-            delayResolve = (stillActive) => {
-                delayResolve = null;
-                resolve(stillActive && generation === playGeneration);
+            const check = () => {
+                if (generation !== playGeneration) { resolve(false); return; }
+                resolve(true);
             };
-            // Audio-based timer via autoPlay's silence blob generator
-            const timerAudio = new Audio();
-            timerAudio.volume = 0;
-            const blob = createSilenceBlob(ms);
-            const url = URL.createObjectURL(blob);
-            timerAudio.src = url;
-            timerAudio.onended = () => {
-                URL.revokeObjectURL(url);
-                const resolveDelay = delayResolve;
-                delayResolve = null;
-                if (resolveDelay) resolveDelay(true);
-            };
-            timerAudio.play().catch(() => {
-                // Fallback setTimeout
-                secondPlayTimer = setTimeout(() => {
-                    secondPlayTimer = null;
-                    const resolveDelay = delayResolve;
-                    delayResolve = null;
-                    if (resolveDelay) resolveDelay(true);
-                }, ms);
-            });
-        });
-
-    const buildVoiceUrl = (phrase, languageCode) => {
-        const params = new URLSearchParams({ phrase, language_code: languageCode });
-        return `${TTS_BASE_URL}?${params.toString()}`;
-    };
-
-    const fetchVoiceResponse = async (phrase, languageCode) => {
-        const cacheKey = `tts-listen-${languageCode}-${phrase}`;
-        const cache = await caches.open('tts-audio-cache');
-        const cached = await cache.match(cacheKey);
-        if (cached) return cached;
-
-        const response = await fetch(buildVoiceUrl(phrase, languageCode));
-        if (!response.ok) throw new Error(`Server returned ${response.status}`);
-        await cache.put(cacheKey, response.clone());
-        return response;
-    };
-
-    const playVoiceResponse = (response, generation) =>
-        new Promise((resolve, reject) => {
-            if (generation !== playGeneration) { resolve(); return; }
-            response.blob().then((audioBlob) => {
-                if (generation !== playGeneration) { resolve(); return; }
-                const audioUrl = URL.createObjectURL(audioBlob);
-                
-                // Use the global bgAudio element for background playback support
-                bgAudio.src = audioUrl;
-                bgAudio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    resolve();
-                };
-                bgAudio.onerror = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    reject(new Error('Playback error'));
-                };
-                bgAudio.play().catch(reject);
-            }).catch(reject);
+            setTimeout(check, ms);
         });
 
     const engine = {
@@ -202,11 +139,22 @@ export function createListenEngine({
             const playPhrase = async (phrase, languageCode) => {
                 playStatusEl.textContent = 'Loading...';
                 const phraseFirstPart = phrase.split('|')[0].trim();
-                const response = await fetchVoiceResponse(phraseFirstPart, languageCode);
-                if (generation !== playGeneration) return;
-
-                playStatusEl.textContent = '▶ Playing';
-                await playVoiceResponse(response, generation);
+                try {
+                    const buffer = await fetchTTS(phraseFirstPart, languageCode);
+                    if (generation !== playGeneration) return;
+                    const blob = new Blob([buffer]);
+                    const url = URL.createObjectURL(blob);
+                    playStatusEl.textContent = '▶ Playing';
+                    await new Promise((resolve, reject) => {
+                        bgAudio.src = url;
+                        bgAudio.onended = () => { URL.revokeObjectURL(url); resolve(); };
+                        bgAudio.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Playback error')); };
+                        bgAudio.play().catch(reject);
+                    });
+                } catch (e) {
+                    if (generation === playGeneration) playStatusEl.textContent = 'Failed to play';
+                    throw e;
+                }
             };
 
             try {
