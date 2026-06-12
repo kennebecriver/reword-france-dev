@@ -1,7 +1,6 @@
 import { shuffleArrayInPlace } from './shuffleUtils.js';
 import { bgAudio, fetchTTS } from './autoPlay.js';
-
-// Index-based deck navigation for Listen mode (no swipe queue / discard).
+import { renderListenList } from '../ui/listenList.js';
 
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
 export function createListenEngine({
@@ -9,7 +8,6 @@ export function createListenEngine({
     sessionKey,
     viewId,
     showView,
-    buildCard,
     onAfterRender,
     dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl, backNavBtn, nextNavBtn }
 }) {
@@ -37,11 +35,11 @@ export function createListenEngine({
             store[sessionKey] = [...store.appData[name]];
             currentIndex = 0;
             deckTitleEl.textContent = name;
-            engine.renderCard();
+            engine.renderCard(true); // true = auto-scroll to top/active
             showView(viewId);
         },
 
-        renderCard() {
+        renderCard(autoScroll = false) {
             cancelPlaySequence();
             engine._isPlaying = false;
 
@@ -49,14 +47,16 @@ export function createListenEngine({
             if (!deck.length) { showView('topics'); return; }
 
             currentIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
-            const card = buildCard(deck[currentIndex]);
-            card.className = 'card card-active animating';
-            stage.innerHTML = '';
-            stage.appendChild(card);
+            
+            // Render the vertical list, passing a click handler to jump to a card
+            renderListenList(stage, deck, currentIndex, (index) => {
+                currentIndex = index;
+                engine.renderCard(true);
+            }, autoScroll);
+
             engine.updateCounter();
             engine.updateNavButtons();
             if (typeof onAfterRender === 'function') onAfterRender();
-            // Notify autoPlay, if attached
             if (typeof engine._onCardRendered === 'function') engine._onCardRendered();
         },
 
@@ -69,7 +69,7 @@ export function createListenEngine({
             const deck = store[sessionKey];
             if (currentIndex < deck.length - 1) {
                 currentIndex += 1;
-                engine.renderCard();
+                engine.renderCard(true);
             }
         },
 
@@ -81,7 +81,7 @@ export function createListenEngine({
         _goBackInternal() {
             if (currentIndex > 0) {
                 currentIndex -= 1;
-                engine.renderCard();
+                engine.renderCard(true);
             }
         },
 
@@ -108,7 +108,7 @@ export function createListenEngine({
             if (typeof engine._autoPlayStop === 'function') engine._autoPlayStop();
             shuffleArrayInPlace(deck);
             currentIndex = 0;
-            engine.renderCard();
+            engine.renderCard(true);
             if (shuffleBtnEl) {
                 shuffleBtnEl.classList.add('shuffling');
                 setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
@@ -116,16 +116,17 @@ export function createListenEngine({
         },
 
         async playActiveCard() {
-            const top = stage.querySelector('.card-active');
+            const deck = store[sessionKey];
+            const cardData = deck[currentIndex];
 
             if (!playStatusEl) return;
-            if (!top) {
+            if (!cardData) {
                 playStatusEl.textContent = 'No active card';
                 return;
             }
 
-            const visiblePhrase = (top.dataset.t2 || '').trim();
-            const hiddenPhrase = (top.dataset.t1 || '').trim();
+            const visiblePhrase = (cardData.text2 || '').trim();
+            const hiddenPhrase = (cardData.text1 || '').trim();
 
             if (!visiblePhrase && !hiddenPhrase) {
                 playStatusEl.textContent = 'Empty phrase';

@@ -96,7 +96,6 @@ const ListenEngine = createListenEngine({
     sessionKey: 'listenSession',
     viewId: 'deck-listen',
     showView,
-    buildCard: createListenCard,
     dom: {
         stage: listenShell.stage,
         deckTitleEl: listenShell.deckTitleEl,
