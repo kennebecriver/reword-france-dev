@@ -2,6 +2,7 @@ import { getRuntimeConfig, initGeminiModeToggle } from './config/runtime.js';
 import { createSheetsApi } from './api/sheetsApi.js';
 import { createCardsEngine } from './engine/cardsEngine.js';
 import { createListenEngine } from './engine/listenEngine.js';
+import { createAutoPlay } from './engine/autoPlay.js';
 import { store } from './state/store.js';
 import { renderTopics } from './ui/topics.js';
 import { showView } from './ui/views.js';
@@ -96,22 +97,6 @@ const ListenEngine = createListenEngine({
     viewId: 'deck-listen',
     showView,
     buildCard: createListenCard,
-    onAutoPlayStateChange(isActive, isPaused) {
-        const btn = listenShell.onairBtnEl;
-        if (isActive && !isPaused) {
-            btn.textContent = '⏹';
-            btn.classList.add('onair-active');
-            btn.title = 'Stop auto-play';
-        } else if (isActive && isPaused) {
-            btn.textContent = '⏸';
-            btn.classList.add('onair-active');
-            btn.title = 'Resume auto-play';
-        } else {
-            btn.textContent = '▶';
-            btn.classList.remove('onair-active');
-            btn.title = 'Auto-play mode';
-        }
-    },
     dom: {
         stage: listenShell.stage,
         deckTitleEl: listenShell.deckTitleEl,
@@ -122,6 +107,51 @@ const ListenEngine = createListenEngine({
         nextNavBtn: listenShell.repeatBtn
     }
 });
+
+// ─── On Air (auto-play) for Listen mode ──────────────────────────────────
+
+function setOnAirButtonState(isActive, isPaused) {
+    const btn = listenShell.onairBtnEl;
+    if (isActive && !isPaused) {
+        btn.textContent = '⏹';
+        btn.classList.add('onair-active');
+        btn.title = 'Stop auto-play';
+    } else if (isActive && isPaused) {
+        btn.textContent = '⏸';
+        btn.classList.add('onair-active');
+        btn.title = 'Resume auto-play';
+    } else {
+        btn.textContent = '▶';
+        btn.classList.remove('onair-active');
+        btn.title = 'Auto-play mode';
+    }
+}
+
+const listenAutoPlay = createAutoPlay({
+    getCurrentIndex: () => {
+        const deck = store.listenSession;
+        const top = listenShell.stage.querySelector('.card-active');
+        if (!deck || !top) return 0;
+        for (let i = 0; i < deck.length; i++) {
+            if (deck[i].text1 === top.dataset.t1) return i;
+        }
+        return 0;
+    },
+    getDeckLength: () => store.listenSession.length,
+    goNextInternal: () => ListenEngine._goNextInternal(),
+    goBackInternal: () => ListenEngine._goBackInternal(),
+    playActiveCard: () => ListenEngine.playActiveCard(),
+    renderCard: () => ListenEngine.renderCard(),
+    getCardData: () => {
+        const top = listenShell.stage.querySelector('.card-active');
+        return top ? { text1: top.dataset.t1, text2: top.dataset.t2 } : null;
+    },
+    onStateChange: setOnAirButtonState
+});
+
+// Attach auto-play hooks to ListenEngine
+ListenEngine._onCardRendered = () => listenAutoPlay.onCardRendered();
+ListenEngine._autoPlayStop = () => listenAutoPlay.stop();
 
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;
@@ -141,10 +171,10 @@ function bindListenChrome(shell, engine) {
     shell.playBtn.addEventListener('click', () => engine.playActiveCard());
     shell.repeatBtn.addEventListener('click', () => engine.goNext());
     shell.onairBtnEl.addEventListener('click', () => {
-        if (engine.isAutoPlaying() || engine.isAutoPlayPaused()) {
-            engine.toggleAutoPlayPause();
+        if (listenAutoPlay.isPlaying() || listenAutoPlay.isPaused()) {
+            listenAutoPlay.togglePause();
         } else {
-            engine.startAutoPlay();
+            listenAutoPlay.start();
         }
     });
 }
