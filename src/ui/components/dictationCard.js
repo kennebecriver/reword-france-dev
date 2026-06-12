@@ -11,6 +11,7 @@ export function createDictationCard(data) {
     card.className = 'card dictation-card card-next';
     card.dataset.t1 = data.text1;
     card.dataset.t2 = data.text2;
+    card.dataset.t3 = data.text3 ?? '';
 
     const body = document.createElement('div');
     body.className = 'card-body dictation-card-body';

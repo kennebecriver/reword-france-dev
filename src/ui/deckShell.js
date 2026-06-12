@@ -8,7 +8,7 @@ function qs(root, selector) {
 
 /**
  * @param {HTMLElement} viewRoot - e.g. #view-deck
- * @param {{ idSuffix?: string, hideAutoPlay?: boolean }} [options]
+ * @param {{ idSuffix?: string, hideAutoPlay?: boolean, hideOnAir?: boolean }} [options]
  */
 export function mountDeckShell(viewRoot, options = {}) {
     const tpl = document.getElementById('deck-shell-template');
@@ -25,6 +25,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     const stage = qs(deckRoot, '.deck-card-stage');
     const deckCounterEl = qs(deckRoot, '.deck-shell-counter');
     const shuffleBtnEl = qs(deckRoot, '.deck-shuffle-btn');
+    const onairBtnEl = qs(deckRoot, '.deck-onair-btn');
     const playStatusEl = qs(deckRoot, '.deck-play-status');
     const autoPlayToggle = qs(deckRoot, '.deck-auto-play-toggle');
     const geminiToggle = qs(deckRoot, '.deck-gemini-toggle');
@@ -37,6 +38,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     stage.id = withId('card-stage');
     deckCounterEl.id = withId('deck-counter');
     shuffleBtnEl.id = withId('shuffle-btn');
+    onairBtnEl.id = withId('onair-btn');
     playStatusEl.id = withId('play-status');
     autoPlayToggle.id = withId('auto-play-toggle');
     geminiToggle.id = withId('gemini-mode-toggle');
@@ -52,12 +54,18 @@ export function mountDeckShell(viewRoot, options = {}) {
         autoPlayToggle.disabled = true;
     }
 
+    if (options.hideOnAir) {
+        onairBtnEl.style.display = 'none';
+        onairBtnEl.disabled = true;
+    }
+
     return {
         root: deckRoot,
         stage,
         deckTitleEl,
         deckCounterEl,
         shuffleBtnEl,
+        onairBtnEl,
         playStatusEl,
         autoPlayToggle,
         geminiToggle,
