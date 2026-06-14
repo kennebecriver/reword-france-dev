@@ -49,7 +49,8 @@ export async function fetchTTS(phrase, languageCode) {
     if (_ttsCache[cacheKey]) return _ttsCache[cacheKey].slice(0);
 
     const TTS_BASE_URL = 'https://reword-france-463001342259.northamerica-northeast2.run.app/get_voice';
-    const params = new URLSearchParams({ phrase, language_code: languageCode, model: "gemini" if languageCode == 'fr-FR' else "" });
+    const model = languageCode === 'fr-FR' ? 'gemini' : '';
+    const params = new URLSearchParams({ phrase, language_code: languageCode, model });
     const url = `${TTS_BASE_URL}?${params.toString()}`;
     const response = await fetch(url);
     if (!response.ok) throw new Error(`TTS server returned ${response.status}`);
