@@ -125,11 +125,10 @@ export function createListenEngine({
                 return;
             }
 
-            const visiblePhrase = (cardData.text2 || '').trim();
             const hiddenPhrase = (cardData.text1 || '').trim();
 
-            if (!visiblePhrase && !hiddenPhrase) {
-                playStatusEl.textContent = 'Empty phrase';
+            if (!hiddenPhrase) {
+                playStatusEl.textContent = 'No hidden phrase';
                 return;
             }
 
@@ -159,15 +158,8 @@ export function createListenEngine({
             };
 
             try {
-                if (visiblePhrase) {
-                    await playPhrase(visiblePhrase, 'ru-RU');
-                    if (generation !== playGeneration) return;
-                }
-                if (hiddenPhrase) {
-                    const shouldContinue = await waitMs(3000, generation);
-                    if (!shouldContinue) return;
-                    await playPhrase(hiddenPhrase, 'fr-FR');
-                }
+                // Only play the hidden French phrase (text1) as requested by user
+                await playPhrase(hiddenPhrase, 'fr-FR');
             } catch (error) {
                 console.error('Play error:', error);
                 if (generation === playGeneration) playStatusEl.textContent = 'Failed to play';
