@@ -446,6 +446,7 @@ body {
     transform: none !important;
     box-shadow: none;
     margin: 0;
+    touch-action: auto;
 }
 
 .listen-card-inner .card-body {
