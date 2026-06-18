@@ -1,24 +1,23 @@
 /**
- * listenList.js — Вертикальный список карточек для режима Listen.
+ * listenList.js — Vertical list of cards for Listen mode.
  *
- * Заменяет стек карточек на прокручиваемую ленту.
- * Позволяет выбрать активную карточку тапом и автоматически
- * прокручивает ленту к активной карточке при автоплее.
+ * Replaces the stacked card UI with a scrollable list. Allows selecting the active
+ * card by tap and automatically scrolls to the active card during autoplay.
  */
 
 import { createListenCard } from './components/listenCard.js';
 
 /**
- * Рендерит или обновляет список карточек.
+ * Render or update the list of cards.
  *
- * @param {HTMLElement} container - Контейнер для списка (например, #card-stage)
- * @param {Array<{text1: string, text2: string, text3: string}>} deck - Массив карточек
- * @param {number} activeIndex - Индекс текущей активной карточки
- * @param {(index: number) => void} onCardClick - Колбэк при клике на карточку
- * @param {boolean} [autoScroll=false] - Прокручивать ли к активной карточке
+ * @param {HTMLElement} container - Container for the list (e.g. #card-stage)
+ * @param {Array<{text1: string, text2: string, text3: string}>} deck - Array of cards
+ * @param {number} activeIndex - Index of the currently active card
+ * @param {(index: number) => void} onCardClick - Callback when a list item is clicked
+ * @param {boolean} [autoScroll=false] - Whether to auto-scroll to the active card
  */
 export function renderListenList(container, deck, activeIndex, onCardClick, autoScroll = false) {
-    // Если контейнер пуст или изменился размер колоды, пересоздаем список
+    // If container is empty or deck size changed, rebuild the list
     const needsRebuild = container.children.length === 0 || container.children.length !== deck.length;
 
     if (needsRebuild) {
@@ -30,13 +29,13 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
             listItem.className = 'listen-list-item';
             listItem.dataset.index = index;
 
-            // Создаем стандартную карточку
+            // Create the standard card element
             const card = createListenCard(data);
-            // Убираем классы анимации стека, так как это список
+            // Remove stack animation classes since this is a list
             card.classList.remove('card-next', 'card-active', 'animating');
             card.classList.add('listen-card-inner');
 
-            // Добавляем маркер номера карточки
+            // Add a marker showing the card number
             const marker = document.createElement('div');
             marker.className = 'listen-card-marker';
             marker.textContent = `${index + 1}`;
@@ -45,7 +44,7 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
             listItem.appendChild(card);
 
             listItem.addEventListener('click', (e) => {
-                // Игнорируем клики по кнопке "глаз", чтобы не триггерить выбор карточки
+                // Ignore clicks on the eye reveal button to avoid selecting the card
                 if (e.target.closest('.reveal-btn')) return;
                 onCardClick(index);
             });
@@ -54,12 +53,12 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
         });
     }
 
-    // Обновляем активное состояние и прокрутку
+    // Update active state and scrolling
     updateActiveState(container, activeIndex, autoScroll);
 }
 
 /**
- * Обновляет визуальное состояние активной карточки и прокручивает к ней.
+ * Update visual active state and optionally scroll to the active item.
  *
  * @param {HTMLElement} container
  * @param {number} activeIndex
@@ -80,7 +79,7 @@ export function updateActiveState(container, activeIndex, autoScroll = false) {
     });
 
     if (autoScroll && items[activeIndex]) {
-        // Плавная прокрутка к центру активной карточки
+        // Smooth scroll to center the active card
         items[activeIndex].scrollIntoView({
             behavior: 'smooth',
             block: 'center'

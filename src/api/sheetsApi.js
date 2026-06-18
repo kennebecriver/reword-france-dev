@@ -1,4 +1,8 @@
 // Data access layer for Google Sheets.
+/**
+ * Sheets API factory. `fetchData()` requests spreadsheet metadata and a batchGet of values,
+ * returning an object mapping sheetName -> Array<{text1,text2,text3}>.
+ */
 export function createSheetsApi(config) {
     return {
         async fetchData() {

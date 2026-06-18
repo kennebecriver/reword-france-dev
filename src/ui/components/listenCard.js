@@ -1,6 +1,9 @@
 // Listen card: shows text2 upfront; text1 hidden under the eye (inverse of studyCard).
 // dataset.t1/t2 match study/dictation so listenEngine TTS still reads phrase from t1.
 
+/**
+ * Create a Listen-mode card: shows the visible phrase and an eye button to reveal the hidden text (text1).
+ */
 export function createListenCard(data) {
     const card = document.createElement('div');
     card.className = 'card card-next';

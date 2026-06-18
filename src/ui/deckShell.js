@@ -10,6 +10,10 @@ function qs(root, selector) {
  * @param {HTMLElement} viewRoot - e.g. #view-deck
  * @param {{ idSuffix?: string, hideAutoPlay?: boolean, hideOnAir?: boolean }} [options]
  */
+/**
+ * Clone the shared deck screen template, assign suffixed IDs and return a set of DOM handles
+ * used by engines and bootstrap.
+ */
 export function mountDeckShell(viewRoot, options = {}) {
     const tpl = document.getElementById('deck-shell-template');
     if (!tpl) throw new Error('deckShell: #deck-shell-template not found');

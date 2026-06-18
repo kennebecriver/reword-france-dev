@@ -1,39 +1,28 @@
 /**
- * autoPlay.js — On Air: режим автоматического листенинга.
+ * autoPlay.js — On-Air autoplay mode.
  *
- * ─── ПРОБЛЕМА (Android Chrome, экран выключен) ───
+ * Problem (mobile browsers, screen off):
+ * - Browsers (e.g. Chrome on Android) aggressively throttle timers when the
+ *   document is hidden, which breaks timer-based autoplay flows.
+ * - Silent audio does not always prevent throttling; browsers consider audible
+ *   audio when it exceeds a minimal threshold.
+ * - Wake Lock may be released when the document becomes hidden.
  *
- * 1) Троттлинг setTimeout: при document.hidden Chrome замедляет JS-таймеры
- *    до ~1 вызова в минуту. Обычный setTimeout(3000) не работает.
- *
- * 2) Беззвучное аудио не защищает: Chrome даёт исключение из троттлинга
- *    только вкладкам с РЕАЛЬНЫМ звуком (выше порога громкости). WAV
- *    с нулевыми сэмплами + volume=0 НЕ считаются за «играющее аудио».
- *
- * 3) Wake Lock снимается при document.hidden: как только экран гаснет,
- *    document.hidden=true и лок автоматически освобождается.
- *
- * ─── РЕШЕНИЕ ───
- *
- * Вместо отдельных таймеров склеиваем ВСЁ в один непрерывный аудио-поток:
- *
- *   [TTS_ru] + [3s low-amp sine 30Hz] + [TTS_fr] + [3s low-amp sine 30Hz]
- *   └────── один WAV-файл, играется без разрывов ──────────────────────→
- *
- * - bgAudio.onended срабатывает один раз на весь шаг (карта + паузы).
- * - Low-amp sine (30Hz, амплитуда 0.01): Chrome считает audible.
- * - Media Session API держит «Сейчас играет» в шторке.
- * - Wake Lock — дополнительная защита (на устройствах где работает).
+ * Solution:
+ * Compose TTS segments and a short low-amplitude audible tail into a single
+ * continuous WAV for each step: [TTS_ru] + [3s low-amp sine] + [TTS_fr] + [3s low-amp sine].
+ * Playing one continuous WAV reduces the risk of throttling and keeps MediaSession
+ * and WakeLock mechanisms active where available.
  */
 
-// ─── ГЛОБАЛЬНЫЙ АУДИО-ЭЛЕМЕНТ ──────────────────────────────────────────
+// ─── GLOBAL AUDIO ELEMENT ─────────────────────────────────────────────
 
 /** @type {HTMLAudioElement} */
 export const bgAudio = new Audio();
 bgAudio.preload = 'auto';
 bgAudio.volume = 1.0;
 
-// ─── УТИЛИТЫ ────────────────────────────────────────────────────────────
+// ─── UTILITIES ─────────────────────────────────────────────────────────
 
 /**
  * Fetch TTS audio and return raw ArrayBuffer.
@@ -60,6 +49,10 @@ export async function fetchTTS(phrase, languageCode) {
     return buffer.slice(0);
 }
 
+/**
+ * Encode an AudioBuffer to 16-bit PCM WAV (RIFF) and return a Blob of type 'audio/wav'.
+ * Used to create a single playable WAV from rendered OfflineAudioContext output.
+ */
 function audioBufferToWav(audioBuffer) {
     const numChannels = audioBuffer.numberOfChannels;
     const sampleRate = audioBuffer.sampleRate;
@@ -91,9 +84,9 @@ function audioBufferToWav(audioBuffer) {
 }
 
 /**
- * Низкоамплитудный синус 30Hz, амплитуда 0.01.
- * Достаточно, чтобы Chrome считал вкладку «играющей аудио»,
- * но едва слышно для пользователя.
+ * Low-amplitude 30Hz sine tail with amplitude 0.01.
+ * This is sufficient for browsers to consider the tab as producing audible audio
+ * while remaining barely perceptible to the user.
  */
 function createLowTail(sampleRate, durationMs) {
     const len = Math.floor(sampleRate * durationMs / 1000);
@@ -117,6 +110,10 @@ function createLowTail(sampleRate, durationMs) {
  *   onStateChange: (active: boolean, paused: boolean) => void,
  *   onStepStart?: () => void
  * }} api
+ */
+/**
+ * On-Air autoplay controller: builds a single WAV per step (TTS_ru + tail + TTS_fr + tail),
+ * manages WakeLock, MediaSession and playback lifecycle.
  */
 export function createAutoPlay(api) {
     let _active = false;
@@ -189,10 +186,10 @@ export function createAutoPlay(api) {
     };
     document.addEventListener('visibilitychange', _onVisibilityChange);
 
-    // ─── ОСНОВНАЯ ЛОГИКА ─────────────────────────────────────────────
+    // ─── MAIN LOGIC ─────────────────────────────────────────────────
 
     /**
-     * Собрать один WAV: [TTS_ru + 3s low-tail + TTS_fr + 3s low-tail].
+     * Assemble one WAV: [TTS_ru + 3s low-tail + TTS_fr + 3s low-tail].
      */
     async function _buildStepAudio(cardData) {
         const gen = _gen;
@@ -321,7 +318,7 @@ export function createAutoPlay(api) {
         // onCardRendered will call _playStep again
     }
 
-    // ─── ПУБЛИЧНЫЙ API ───────────────────────────────────────────────
+    // ─── PUBLIC API ─────────────────────────────────────────────────
 
     const autoPlay = {
         start() {
@@ -385,7 +382,7 @@ export function createAutoPlay(api) {
     return autoPlay;
 }
 
-// ─── createAutoPlayFr — Воспроизведение только французской фразы ────────
+// ─── createAutoPlayFr — French-only playback ──────────────────────────
 
 /**
  * @param {{
