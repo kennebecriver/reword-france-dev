@@ -17,8 +17,8 @@ import { createListenCard } from './components/listenCard.js';
  * @param {boolean} [autoScroll=false] - Whether to auto-scroll to the active card
  */
 export function renderListenList(container, deck, activeIndex, onCardClick, autoScroll = false) {
-    // If container is empty or deck size changed, rebuild the list
-    const needsRebuild = container.children.length === 0 || container.children.length !== deck.length;
+    // Rebuild the list if it's empty, size changed, or we're at the start (init/shuffle)
+    const needsRebuild = container.children.length === 0 || container.children.length !== deck.length || (activeIndex === 0 && autoScroll);
 
     if (needsRebuild) {
         container.innerHTML = '';

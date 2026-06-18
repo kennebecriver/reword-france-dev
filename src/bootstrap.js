@@ -141,22 +141,12 @@ function setOnAirFrButtonState(isActive, isPaused) {
 }
 
 const listenAutoPlay = createAutoPlay({
-    getCurrentIndex: () => {
-        const deck = store.listenSession;
-        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
-        if (!deck || !activeItem) return 0;
-        return parseInt(activeItem.dataset.index, 10) || 0;
-    },
-    getDeckLength: () => store.listenSession.length,
+    getCurrentIndex: () => ListenEngine.getCurrentIndex(),
+    getDeckLength: () => ListenEngine.getDeckLength(),
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
     fetchTTS,
-    getCardData: () => {
-        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
-        if (!activeItem) return null;
-        const card = activeItem.querySelector('.listen-card-inner');
-        return card ? { text1: card.dataset.t1, text2: card.dataset.t2 } : null;
-    },
+    getCardData: () => ListenEngine.getCardData(),
     onStateChange: setOnAirButtonState,
     onStepStart: () => {
         // blink play status if needed
@@ -164,22 +154,12 @@ const listenAutoPlay = createAutoPlay({
 });
 
 const listenAutoPlayFr = createAutoPlayFr({
-    getCurrentIndex: () => {
-        const deck = store.listenSession;
-        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
-        if (!deck || !activeItem) return 0;
-        return parseInt(activeItem.dataset.index, 10) || 0;
-    },
-    getDeckLength: () => store.listenSession.length,
+    getCurrentIndex: () => ListenEngine.getCurrentIndex(),
+    getDeckLength: () => ListenEngine.getDeckLength(),
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
     fetchTTS,
-    getCardData: () => {
-        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
-        if (!activeItem) return null;
-        const card = activeItem.querySelector('.listen-card-inner');
-        return card ? { text1: card.dataset.t1, text2: card.dataset.t2 } : null;
-    },
+    getCardData: () => ListenEngine.getCardData(),
     onStateChange: setOnAirFrButtonState,
     onStepStart: () => {
         // blink play status if needed

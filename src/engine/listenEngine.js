@@ -39,6 +39,7 @@ export function createListenEngine({
             store[sessionKey] = [...store.appData[name]];
             currentIndex = 0;
             deckTitleEl.textContent = name;
+            stage.innerHTML = ''; // Force list rebuild on init
             engine.renderCard(true); // true = auto-scroll to top/active
             showView(viewId);
         },
@@ -105,6 +106,9 @@ export function createListenEngine({
             const total = store[sessionKey].length;
             deckCounterEl.textContent = total ? `${currentIndex + 1} / ${total}` : '0';
         },
+        getCurrentIndex() { return currentIndex; },
+        getDeckLength() { return store[sessionKey].length; },
+        getCardData(idx = currentIndex) { return store[sessionKey][idx] || null; },
 
         shuffleDeck() {
             const deck = store[sessionKey];

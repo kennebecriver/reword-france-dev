@@ -314,8 +314,10 @@ export function createAutoPlay(api) {
         if (gen !== _gen || !_active || _paused) return;
         if (isLast) { stop(); return; }
 
-        api.goNextInternal();
-        // onCardRendered will call _playStep again
+        // Small delay to prevent infinite fast-loop if audio fails or is too short
+        setTimeout(() => {
+            if (gen === _gen && _active && !_paused) api.goNextInternal();
+        }, 100);
     }
 
     // ─── PUBLIC API ─────────────────────────────────────────────────
@@ -560,7 +562,10 @@ export function createAutoPlayFr(api) {
         if (gen !== _gen || !_active || _paused) return;
         if (isLast) { stop(); return; }
 
-        api.goNextInternal();
+        // Small delay to prevent infinite fast-loop if audio fails or is too short
+        setTimeout(() => {
+            if (gen === _gen && _active && !_paused) api.goNextInternal();
+        }, 100);
     }
 
     const autoPlayFr = {
