@@ -39,6 +39,7 @@ export function createListenEngine({
             store[sessionKey] = [...store.appData[name]];
             currentIndex = 0;
             deckTitleEl.textContent = name;
+            stage.innerHTML = ''; // Force list rebuild on deck init
             engine.renderCard(true); // true = auto-scroll to top/active
             showView(viewId);
         },
