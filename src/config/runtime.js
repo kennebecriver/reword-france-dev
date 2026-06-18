@@ -1,4 +1,7 @@
 // Runtime configuration parsed from URL params.
+/**
+ * Return API configuration from URL query params: { apiKey, sheetId }.
+ */
 export function getRuntimeConfig() {
     const params = new URLSearchParams(window.location.search);
     return {
@@ -29,6 +32,10 @@ function syncGeminiChecked(toggles, checked) {
 /**
  * Gemini flag + sync across multiple checkbox inputs (e.g. study + dictation deck screens).
  * @param {HTMLInputElement[]} geminiToggleInputs
+ */
+/**
+ * Initialize a synchronized Gemini checkbox across multiple screens;
+ * returns `{ isEnabled: () => boolean }` to read current state.
  */
 export function initGeminiModeToggle(geminiToggleInputs = []) {
     const path = window.location.pathname;

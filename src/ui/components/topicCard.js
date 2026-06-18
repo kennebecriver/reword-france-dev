@@ -1,3 +1,6 @@
+/**
+ * Create a topic card with main button to open the deck and action buttons: shuffle, dictation, and optionally listen.
+ */
 export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onListenClick, onShuffleDeck }) {
     const card = document.createElement('div');
     card.className = 'topic-card';

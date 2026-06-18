@@ -3,6 +3,10 @@ import { bgAudio, fetchTTS } from './autoPlay.js';
 import { renderListenList } from '../ui/listenList.js';
 
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
+/**
+ * Listen mode engine: index-based navigation over a deck, vertical list rendering
+ * and playback via shared `bgAudio`. Manages `currentIndex` and exposes navigation methods.
+ */
 export function createListenEngine({
     store,
     sessionKey,
@@ -115,6 +119,10 @@ export function createListenEngine({
             }
         },
 
+        /**
+         * Plays the hidden (French) phrase for the current index.
+         * Uses `playGeneration` to cancel stale playback operations.
+         */
         async playActiveCard() {
             const deck = store[sessionKey];
             const cardData = deck[currentIndex];

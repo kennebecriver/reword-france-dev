@@ -6,6 +6,10 @@ const FRENCH_INSERT_CHARS = [
     'ô', 'Ô', 'û', 'Û', 'ë', 'Ë', 'ï', 'Ï', 'ü', 'Ü', 'œ', 'Œ',
 ];
 
+/**
+ * Create a Dictation-mode card DOM: input field, hint, French character panel
+ * and input-checking logic. Triggers `DictationEngine.playActiveCard()` on full match.
+ */
 export function createDictationCard(data) {
     const card = document.createElement('div');
     card.className = 'card dictation-card card-next';
@@ -173,6 +177,10 @@ export function createDictationCard(data) {
 
     let wasComplete = false;
 
+    /**
+     * Sync UI state from the input value against the expected phrase (dataset.t1).
+     * Applies css classes for match/error/complete and triggers playback on completion.
+     */
     const syncFromInput = () => {
         const target = card.dataset.t1 ?? '';
         const value = input.value;

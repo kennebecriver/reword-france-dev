@@ -1,6 +1,11 @@
 import { shuffleArrayInPlace } from './shuffleUtils.js';
 
 // Swipe / queue / audio engine parameterized by DOM scope and Card factory (`createCardEl`).
+/**
+ * Cards engine factory implementing swipe behavior.
+ * Manages the session queue (`store[sessionKey]`), renders up to two visible cards,
+ * and wires user interaction events.
+ */
 export function createCardsEngine({
     store,
     sessionKey,
@@ -47,6 +52,10 @@ export function createCardsEngine({
             if (typeof onAfterSpawn === 'function') onAfterSpawn();
         },
 
+        /**
+         * Pointer event handler implementing drag/swipe for a card element.
+         * Updates CSS variables for transforms and calls `swipe()` when threshold exceeded.
+         */
         bindEvents(el) {
             let start = { x: 0, y: 0 };
             let current = { x: 0, y: 0 };
@@ -87,6 +96,10 @@ export function createCardsEngine({
             if (top) this.swipe(top, dir);
         },
 
+        /**
+         * Play the active card: reads the phrase via remote TTS with CacheStorage caching,
+         * creates an `Audio` instance and manages internal `_isPlaying` state.
+         */
         async playActiveCard() {
             const top = stage.querySelector('.card-active');
 

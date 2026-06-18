@@ -1,3 +1,6 @@
+/**
+ * Create a Study card DOM: displays `text1` and a button to reveal `text2`.
+ */
 export function createStudyCard(data) {
     const card = document.createElement('div');
     card.className = 'card card-next';
