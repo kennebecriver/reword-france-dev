@@ -384,3 +384,245 @@ export function createAutoPlay(api) {
 
     return autoPlay;
 }
+
+// ─── createAutoPlayFr — Воспроизведение только французской фразы ────────
+
+/**
+ * @param {{
+ *   getCardData: () => ({ text1: string, text2: string }|null),
+ *   getDeckLength: () => number,
+ *   getCurrentIndex: () => number,
+ *   goNextInternal: () => void,
+ *   goBackInternal: () => void,
+ *   fetchTTS: (phrase: string, lang: string) => Promise<ArrayBuffer>,
+ *   onStateChange: (active: boolean, paused: boolean) => void,
+ *   onStepStart?: () => void
+ * }} api
+ */
+export function createAutoPlayFr(api) {
+    let _active = false;
+    let _paused = false;
+    let _gen = 0;
+    let _wakeLock = null;
+    let _currentUrl = null;
+
+    const _requestWakeLock = async () => {
+        try {
+            if ('wakeLock' in navigator) {
+                _wakeLock = await navigator.wakeLock.request('screen');
+                _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+            }
+        } catch (err) { console.warn('[autoPlayFr] Wake Lock:', err); }
+    };
+    const _releaseWakeLock = () => {
+        if (_wakeLock) { _wakeLock.release().catch(() => {}); _wakeLock = null; }
+    };
+
+    const _updateMediaSession = (state, cardData) => {
+        if (!('mediaSession' in navigator)) return;
+        if (state === 'playing' && cardData) {
+            try {
+                navigator.mediaSession.metadata = new MediaMetadata({
+                    title: cardData.text1 || 'Reword (FR)',
+                    artist: 'Reword',
+                    album: 'French only',
+                    artwork: [
+                        { src: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
+                        { src: 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 512 512\'%3E%3Crect width=\'512\' height=\'512\' fill=\'%231a1a2e\' rx=\'60\'/%3E%3Ctext x=\'256\' y=\'300\' text-anchor=\'middle\' fill=\'%23fff\' font-size=\'280\' font-family=\'sans-serif\'%3ER%3C/text%3E%3C/svg%3E',
+                          sizes: '512x512', type: 'image/svg+xml' }
+                    ]
+                });
+                if ('setPositionState' in navigator.mediaSession) {
+                    navigator.mediaSession.setPositionState({ duration: 10, playbackRate: 1.0, position: 0 });
+                }
+            } catch (e) { /* ignore */ }
+            navigator.mediaSession.playbackState = 'playing';
+        } else if (state === 'paused') {
+            navigator.mediaSession.playbackState = 'paused';
+        } else {
+            try { navigator.mediaSession.metadata = null; } catch (e) { /* ignore */ }
+            navigator.mediaSession.playbackState = 'none';
+        }
+    };
+
+    const _registerHandlers = () => {
+        if (!('mediaSession' in navigator)) return;
+        try {
+            navigator.mediaSession.setActionHandler('play', () => { if (_active && _paused) autoPlayFr.togglePause(); });
+            navigator.mediaSession.setActionHandler('pause', () => { if (_active && !_paused) autoPlayFr.togglePause(); });
+            navigator.mediaSession.setActionHandler('stop', () => { autoPlayFr.stop(); });
+            navigator.mediaSession.setActionHandler('previoustrack', () => { api.goBackInternal(); });
+            navigator.mediaSession.setActionHandler('nexttrack', () => { api.goNextInternal(); });
+            navigator.mediaSession.setActionHandler('seekbackward', () => {});
+            navigator.mediaSession.setActionHandler('seekforward', () => {});
+        } catch (e) { console.warn('[autoPlayFr] Media Session:', e); }
+    };
+
+    const _onVisibilityChange = () => {
+        if (!document.hidden && _active && !_paused) {
+            _requestWakeLock();
+            _registerHandlers();
+        }
+    };
+    document.addEventListener('visibilitychange', _onVisibilityChange);
+
+    async function _buildStepAudio(cardData) {
+        const gen = _gen;
+        const frPhrase = (cardData.text1 || '').split('|')[0].trim();
+
+        if (!frPhrase) return null;
+
+        const frRaw = await api.fetchTTS(frPhrase, 'fr-FR');
+        if (gen !== _gen) return null;
+
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const sr = ctx.sampleRate;
+
+        let frAudio = null;
+        try {
+            if (frRaw) frAudio = await ctx.decodeAudioData(frRaw.slice(0));
+        } catch (e) { ctx.close(); throw e; }
+        if (gen !== _gen) { ctx.close(); return null; }
+
+        const frLen = frAudio ? frAudio.length : 0;
+        const tailLen = Math.floor(sr * 3);
+        const totalLen = (frLen || 1) + tailLen;
+
+        const offline = new OfflineAudioContext(1, totalLen, sr);
+        let offset = 0;
+
+        if (frAudio) {
+            const s = offline.createBufferSource();
+            s.buffer = frAudio;
+            s.connect(offline.destination);
+            s.start(offset / sr);
+            offset += frLen;
+        }
+
+        // tail
+        {
+            const arr = createLowTail(sr, 3000);
+            const b = offline.createBuffer(1, tailLen, sr);
+            b.getChannelData(0).set(arr);
+            const s = offline.createBufferSource();
+            s.buffer = b;
+            s.connect(offline.destination);
+            s.start(offset / sr);
+        }
+
+        const rendered = await offline.startRendering();
+        ctx.close();
+        if (gen !== _gen) return null;
+        return audioBufferToWav(rendered);
+    }
+
+    function _playBlob(blob) {
+        if (_currentUrl) {
+            URL.revokeObjectURL(_currentUrl);
+            _currentUrl = null;
+        }
+        _currentUrl = URL.createObjectURL(blob);
+        bgAudio.src = _currentUrl;
+        return new Promise((resolve) => {
+            bgAudio.onended = () => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            };
+            bgAudio.onerror = () => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            };
+            bgAudio.play().catch(() => {
+                if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+                resolve();
+            });
+        });
+    }
+
+    async function _playStep() {
+        if (!_active || _paused) return;
+        const gen = ++_gen;
+
+        const deckLen = api.getDeckLength();
+        const isLast = !deckLen || api.getCurrentIndex() >= deckLen - 1;
+
+        const cardData = api.getCardData();
+        if (!cardData) { stop(); return; }
+
+        _updateMediaSession('playing', cardData);
+        if (typeof api.onStepStart === 'function') api.onStepStart();
+
+        try {
+            const blob = await _buildStepAudio(cardData);
+            if (gen !== _gen || !_active || _paused) return;
+            if (blob) await _playBlob(blob);
+        } catch (e) {
+            console.error('[autoPlayFr] step error:', e);
+        }
+
+        if (gen !== _gen || !_active || _paused) return;
+        if (isLast) { stop(); return; }
+
+        api.goNextInternal();
+    }
+
+    const autoPlayFr = {
+        start() {
+            if (_active) return;
+            _active = true; _paused = false; _gen++;
+            bgAudio.pause();
+            if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+            bgAudio.src = '';
+            _requestWakeLock();
+            _registerHandlers();
+            _updateMediaSession('paused');
+            api.onStateChange(true, false);
+            _playStep();
+        },
+
+        togglePause() {
+            if (!_active) return;
+            if (_paused) {
+                _paused = false;
+                api.onStateChange(true, false);
+                if (bgAudio.src && bgAudio.paused) {
+                    _updateMediaSession('playing', api.getCardData());
+                    bgAudio.play().catch(() => _playStep());
+                } else {
+                    _playStep();
+                }
+            } else {
+                _paused = true;
+                bgAudio.pause();
+                _updateMediaSession('paused');
+                api.onStateChange(true, true);
+            }
+        },
+
+        stop() {
+            if (!_active) return;
+            _active = false; _paused = false; _gen++;
+            bgAudio.pause();
+            if (_currentUrl) { URL.revokeObjectURL(_currentUrl); _currentUrl = null; }
+            bgAudio.src = '';
+            _releaseWakeLock();
+            _updateMediaSession('none');
+            api.onStateChange(false, false);
+        },
+
+        isPlaying() { return _active && !_paused; },
+        isPaused() { return _active && _paused; },
+
+        onCardRendered() {
+            if (!_active || _paused) return;
+            _playStep();
+        },
+
+        destroy() {
+            autoPlayFr.stop();
+            document.removeEventListener('visibilitychange', _onVisibilityChange);
+        }
+    };
+
+    return autoPlayFr;
+}

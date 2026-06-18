@@ -2,7 +2,7 @@ import { getRuntimeConfig, initGeminiModeToggle } from './config/runtime.js';
 import { createSheetsApi } from './api/sheetsApi.js';
 import { createCardsEngine } from './engine/cardsEngine.js';
 import { createListenEngine } from './engine/listenEngine.js';
-import { createAutoPlay, fetchTTS } from './engine/autoPlay.js';
+import { createAutoPlay, createAutoPlayFr, fetchTTS } from './engine/autoPlay.js';
 import { store } from './state/store.js';
 import { renderTopics } from './ui/topics.js';
 import { showView } from './ui/views.js';
@@ -126,6 +126,20 @@ function setOnAirButtonState(isActive, isPaused) {
     }
 }
 
+function setOnAirFrButtonState(isActive, isPaused) {
+    const btn = listenShell.onairFrBtnEl;
+    if (isActive && !isPaused) {
+        btn.classList.add('onair-active');
+        btn.title = 'Stop French-only auto-play';
+    } else if (isActive && isPaused) {
+        btn.classList.add('onair-active');
+        btn.title = 'Resume French-only auto-play';
+    } else {
+        btn.classList.remove('onair-active');
+        btn.title = 'French only';
+    }
+}
+
 const listenAutoPlay = createAutoPlay({
     getCurrentIndex: () => {
         const deck = store.listenSession;
@@ -149,9 +163,38 @@ const listenAutoPlay = createAutoPlay({
     }
 });
 
+const listenAutoPlayFr = createAutoPlayFr({
+    getCurrentIndex: () => {
+        const deck = store.listenSession;
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (!deck || !activeItem) return 0;
+        return parseInt(activeItem.dataset.index, 10) || 0;
+    },
+    getDeckLength: () => store.listenSession.length,
+    goNextInternal: () => ListenEngine._goNextInternal(),
+    goBackInternal: () => ListenEngine._goBackInternal(),
+    fetchTTS,
+    getCardData: () => {
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (!activeItem) return null;
+        const card = activeItem.querySelector('.listen-card-inner');
+        return card ? { text1: card.dataset.t1, text2: card.dataset.t2 } : null;
+    },
+    onStateChange: setOnAirFrButtonState,
+    onStepStart: () => {
+        // blink play status if needed
+    }
+});
+
 // Attach auto-play hooks to ListenEngine
-ListenEngine._onCardRendered = () => listenAutoPlay.onCardRendered();
-ListenEngine._autoPlayStop = () => listenAutoPlay.stop();
+ListenEngine._onCardRendered = () => {
+    listenAutoPlay.onCardRendered();
+    listenAutoPlayFr.onCardRendered();
+};
+ListenEngine._autoPlayStop = () => {
+    listenAutoPlay.stop();
+    listenAutoPlayFr.stop();
+};
 
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;
@@ -175,6 +218,13 @@ function bindListenChrome(shell, engine) {
             listenAutoPlay.togglePause();
         } else {
             listenAutoPlay.start();
+        }
+    });
+    shell.onairFrBtnEl.addEventListener('click', () => {
+        if (listenAutoPlayFr.isPlaying() || listenAutoPlayFr.isPaused()) {
+            listenAutoPlayFr.togglePause();
+        } else {
+            listenAutoPlayFr.start();
         }
     });
 }

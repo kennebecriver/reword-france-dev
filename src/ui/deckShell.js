@@ -26,6 +26,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     const deckCounterEl = qs(deckRoot, '.deck-shell-counter');
     const shuffleBtnEl = qs(deckRoot, '.deck-shuffle-btn');
     const onairBtnEl = qs(deckRoot, '.deck-onair-btn');
+    const onairFrBtnEl = qs(deckRoot, '.deck-onair-fr-btn');
     const playStatusEl = qs(deckRoot, '.deck-play-status');
     const autoPlayToggle = qs(deckRoot, '.deck-auto-play-toggle');
     const geminiToggle = qs(deckRoot, '.deck-gemini-toggle');
@@ -39,6 +40,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     deckCounterEl.id = withId('deck-counter');
     shuffleBtnEl.id = withId('shuffle-btn');
     onairBtnEl.id = withId('onair-btn');
+    onairFrBtnEl.id = withId('onair-fr-btn');
     playStatusEl.id = withId('play-status');
     autoPlayToggle.id = withId('auto-play-toggle');
     geminiToggle.id = withId('gemini-mode-toggle');
@@ -66,6 +68,7 @@ export function mountDeckShell(viewRoot, options = {}) {
         deckCounterEl,
         shuffleBtnEl,
         onairBtnEl,
+        onairFrBtnEl,
         playStatusEl,
         autoPlayToggle,
         geminiToggle,
