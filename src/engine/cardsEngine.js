@@ -153,7 +153,7 @@ export function createCardsEngine({
                 playStatusEl.textContent = '▶ Playing';
             } catch (error) {
                 console.error('Play error:', error);
-                playStatusEl.textContent = 'Failed to play';
+                playStatusEl.textContent = error.message || 'Failed to play';
                 this._isPlaying = false;
             }
         },

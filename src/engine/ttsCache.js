@@ -38,7 +38,7 @@ import { djb2 } from './hash.js';
  * @returns {string}
  */
 export function buildCacheKey(lang, model, phrase) {
-  return `tts:${lang || ''}:${model || 'default'}:${djb2(phrase)}`;
+  return `/tts/${lang || 'none'}/${model || 'default'}/${djb2(phrase)}`;
 }
 
 /**

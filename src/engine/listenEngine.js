@@ -165,7 +165,7 @@ export function createListenEngine({
                         bgAudio.play().catch(reject);
                     });
                 } catch (e) {
-                    if (generation === playGeneration) playStatusEl.textContent = 'Failed to play';
+                    if (generation === playGeneration) playStatusEl.textContent = e.message || 'Failed to play';
                     throw e;
                 }
             };
@@ -175,7 +175,7 @@ export function createListenEngine({
                 await playPhrase(hiddenPhrase, 'fr-FR');
             } catch (error) {
                 console.error('Play error:', error);
-                if (generation === playGeneration) playStatusEl.textContent = 'Failed to play';
+                if (generation === playGeneration) playStatusEl.textContent = error.message || 'Failed to play';
             } finally {
                 if (generation === playGeneration) {
                     engine._isPlaying = false;

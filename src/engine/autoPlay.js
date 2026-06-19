@@ -88,7 +88,8 @@ function createLowTail(sampleRate, durationMs) {
  *   fetchTTS: (phrase: string, lang: string, options?: object) => Promise<ArrayBuffer>,
  *   getGeminiMode?: () => boolean,
  *   onStateChange: (active: boolean, paused: boolean) => void,
- *   onStepStart?: () => void
+ *   onStepStart?: () => void,
+ *   onTtsError?: (msg: string) => void
  * }} api
  */
 /**
@@ -291,6 +292,8 @@ export function createAutoPlay(api) {
             if (blob) await _playBlob(blob);
         } catch (e) {
             console.error('[autoPlay] step error:', e);
+            if (typeof api.onTtsError === 'function') api.onTtsError(e.message || 'TTS error');
+            autoPlay.stop();
         }
 
         if (gen !== _gen || !_active || _paused) return;
@@ -375,7 +378,8 @@ export function createAutoPlay(api) {
  *   goBackInternal: () => void,
  *   fetchTTS: (phrase: string, lang: string, options?: object) => Promise<ArrayBuffer>,
  *   onStateChange: (active: boolean, paused: boolean) => void,
- *   onStepStart?: () => void
+ *   onStepStart?: () => void,
+ *   onTtsError?: (msg: string) => void
  * }} api
  */
 export function createAutoPlayFr(api) {
@@ -539,6 +543,8 @@ export function createAutoPlayFr(api) {
             if (blob) await _playBlob(blob);
         } catch (e) {
             console.error('[autoPlayFr] step error:', e);
+            if (typeof api.onTtsError === 'function') api.onTtsError(e.message || 'TTS error');
+            autoPlayFr.stop();
         }
 
         if (gen !== _gen || !_active || _paused) return;

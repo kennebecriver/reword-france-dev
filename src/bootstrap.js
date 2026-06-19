@@ -152,7 +152,8 @@ const listenAutoPlay = createAutoPlay({
     onStateChange: setOnAirButtonState,
     onStepStart: () => {
         // blink play status if needed
-    }
+    },
+    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; }
 });
 
 const listenAutoPlayFr = createAutoPlayFr({
@@ -176,7 +177,8 @@ const listenAutoPlayFr = createAutoPlayFr({
     onStateChange: setOnAirFrButtonState,
     onStepStart: () => {
         // blink play status if needed
-    }
+    },
+    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; }
 });
 
 // Attach auto-play hooks to ListenEngine
