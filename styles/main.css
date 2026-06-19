@@ -451,6 +451,22 @@ body {
     color: white;
 }
 
+.listen-list-item.marked-deleted {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.05);
+    opacity: 0.7;
+}
+
+.listen-list-item.marked-deleted .listen-card-inner {
+    opacity: 0.6;
+}
+
+.listen-list-item.marked-deleted .listen-card-delete-btn {
+    background: rgba(239, 68, 68, 0.2);
+    color: #ef4444;
+    opacity: 1;
+}
+
 .listen-card-delete-btn {
     position: absolute;
     top: 12px;

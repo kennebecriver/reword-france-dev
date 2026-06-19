@@ -11,7 +11,7 @@ import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
 import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
-import { filterDeletedRows, markRowDeleted } from './state/deletionManager.js';
+import { filterDeletedRows, markRowDeleted, markRowRestored } from './state/deletionManager.js';
 
 const runtimeConfig = getRuntimeConfig();
 
@@ -212,9 +212,13 @@ ListenEngine._autoPlayStop = () => {
     listenAutoPlayFr.stop();
 };
 ListenEngine._getGeminiMode = geminiModeState.isEnabled;
-ListenEngine._onDeleteCard = (deckName, rowIndex) => {
+ListenEngine._onDeleteCard = (deckName, rowIndex, isMarked) => {
     const sheetId = runtimeConfig.sheetId;
-    markRowDeleted(sheetId, deckName, rowIndex);
+    if (isMarked) {
+        markRowDeleted(sheetId, deckName, rowIndex);
+    } else {
+        markRowRestored(sheetId, deckName, rowIndex);
+    }
     // Only mark in localStorage; card stays on screen until next load
 };
 
