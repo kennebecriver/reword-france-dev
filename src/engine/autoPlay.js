@@ -349,6 +349,7 @@ export function createAutoPlay(api) {
             _releaseWakeLock();
             _updateMediaSession('none');
             api.onStateChange(false, false);
+            if (typeof api.onStepEnd === 'function') api.onStepEnd();
         },
 
         isPlaying() { return _active && !_paused; },

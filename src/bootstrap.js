@@ -161,6 +161,9 @@ const listenAutoPlay = createAutoPlay({
             const card = activeItem.querySelector('.listen-card-inner');
             if (card) revealHiddenPhrase(card);
         }
+    },
+    onStepEnd: () => {
+        listenShell.playStatusEl.textContent = 'Ready';
     }
 });
 
@@ -193,6 +196,9 @@ const listenAutoPlayFr = createAutoPlayFr({
             const card = activeItem.querySelector('.listen-card-inner');
             if (card) revealHiddenPhrase(card);
         }
+    },
+    onStepEnd: () => {
+        listenShell.playStatusEl.textContent = 'Ready';
     }
 });
 
@@ -209,14 +215,7 @@ ListenEngine._getGeminiMode = geminiModeState.isEnabled;
 ListenEngine._onDeleteCard = (deckName, rowIndex) => {
     const sheetId = runtimeConfig.sheetId;
     markRowDeleted(sheetId, deckName, rowIndex);
-    // Remove from current session
-    store.listenSession = store.listenSession.filter(card => card.rowIndex !== rowIndex);
-    // Also remove from appData
-    if (store.appData[deckName]) {
-        store.appData[deckName] = store.appData[deckName].filter(card => card.rowIndex !== rowIndex);
-    }
-    // Re-render
-    ListenEngine.renderCard(true);
+    // Only mark in localStorage; card stays on screen until next load
 };
 
 window.Engine = Engine;
@@ -232,7 +231,11 @@ function bindDeckChrome(shell, engine) {
 }
 
 function bindListenChrome(shell, engine) {
-    shell.backBtn.addEventListener('click', () => showView('topics'));
+    shell.backBtn.addEventListener('click', () => {
+        listenAutoPlay.stop();
+        listenAutoPlayFr.stop();
+        showView('topics');
+    });
     shell.doneBtn.addEventListener('click', () => engine.goBack());
     shell.playBtn.addEventListener('click', () => engine.playActiveCard());
     shell.repeatBtn.addEventListener('click', () => engine.goNext());
