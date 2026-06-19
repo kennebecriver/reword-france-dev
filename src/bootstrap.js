@@ -9,7 +9,7 @@ import { showView } from './ui/views.js';
 import { mountDeckShell } from './ui/deckShell.js';
 import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
-import { createListenCard } from './ui/components/listenCard.js';
+import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
 
 const runtimeConfig = getRuntimeConfig();
@@ -153,7 +153,14 @@ const listenAutoPlay = createAutoPlay({
     onStepStart: () => {
         // blink play status if needed
     },
-    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; }
+    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; },
+    onBeforeNext: () => {
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (activeItem) {
+            const card = activeItem.querySelector('.listen-card-inner');
+            if (card) revealHiddenPhrase(card);
+        }
+    }
 });
 
 const listenAutoPlayFr = createAutoPlayFr({
@@ -178,7 +185,14 @@ const listenAutoPlayFr = createAutoPlayFr({
     onStepStart: () => {
         // blink play status if needed
     },
-    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; }
+    onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; },
+    onBeforeNext: () => {
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (activeItem) {
+            const card = activeItem.querySelector('.listen-card-inner');
+            if (card) revealHiddenPhrase(card);
+        }
+    }
 });
 
 // Attach auto-play hooks to ListenEngine

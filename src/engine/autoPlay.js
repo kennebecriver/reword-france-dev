@@ -299,6 +299,7 @@ export function createAutoPlay(api) {
         if (gen !== _gen || !_active || _paused) return;
         if (isLast) { stop(); return; }
 
+        if (typeof api.onBeforeNext === 'function') api.onBeforeNext();
         api.goNextInternal();
         // onCardRendered will call _playStep again
     }
@@ -550,6 +551,7 @@ export function createAutoPlayFr(api) {
         if (gen !== _gen || !_active || _paused) return;
         if (isLast) { stop(); return; }
 
+        if (typeof api.onBeforeNext === 'function') api.onBeforeNext();
         api.goNextInternal();
     }
 

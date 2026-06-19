@@ -44,7 +44,7 @@ export function createListenCard(data) {
     return card;
 }
 
-function revealHiddenPhrase(card) {
+export function revealHiddenPhrase(card) {
     const eyeZone = card.querySelector('.card-eye-zone');
     const secondaryText = card.querySelector('.card-text-secondary');
     const extraText = card.querySelector('.card-text-extra');
