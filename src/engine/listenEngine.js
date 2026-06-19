@@ -148,7 +148,12 @@ export function createListenEngine({
                 playStatusEl.textContent = 'Loading...';
                 const phraseFirstPart = phrase.split('|')[0].trim();
                 try {
-                    const buffer = await fetchTTS(phraseFirstPart, languageCode);
+                    const buffer = await fetchTTS(phraseFirstPart, languageCode, {
+                        model: languageCode === 'fr-FR'
+                            ? (typeof engine._getGeminiMode === 'function' ? engine._getGeminiMode() ? 'gemini' : 'default' : 'gemini')
+                            : undefined,
+                        onStatus: (msg) => { if (playStatusEl) playStatusEl.textContent = msg; }
+                    });
                     if (generation !== playGeneration) return;
                     const blob = new Blob([buffer]);
                     const url = URL.createObjectURL(blob);
@@ -183,6 +188,7 @@ export function createListenEngine({
     // Hooks for autoPlay module (attached externally via bootstrap)
     engine._onCardRendered = null;
     engine._autoPlayStop = null;
+    engine._getGeminiMode = null;
 
     return engine;
 }

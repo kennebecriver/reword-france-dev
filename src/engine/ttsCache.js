@@ -4,7 +4,7 @@
  * Единый модуль для работы с кешем озвучки (CacheStorage + in-memory).
  * Все ключи формируются по единому паттерну: tts:{lang}:{model}:{hash}
  *
- * Фраза хешируется через SHA-256 (crypto.subtle.digest), чтобы ключ
+ * Фраза хешируется через djb2, чтобы ключ
  * гарантированно был URL-safe и не превышал разумной длины.
  *
  * Примеры ключей:
@@ -107,14 +107,17 @@ export async function setCachedResponse(cacheKey, response) {
  * @param {string} lang — код языка ('fr-FR', 'ru-RU')
  * @param {object} [options]
  * @param {string} [options.model] — принудительная модель (если не указана, определяется по языку)
+ * @param {(msg: string) => void} [options.onStatus] — колбэк для статусных сообщений
  * @returns {Promise<ArrayBuffer>}
  */
 export async function fetchTTS(phrase, lang, options = {}) {
+  const { onStatus } = options;
   const model = options.model || resolveModel(lang);
   const cacheKey = buildCacheKey(lang, model, phrase);
 
   // 1. Быстрейший путь: уже закешированный ArrayBuffer
   if (_bufferCache.has(cacheKey)) {
+    if (onStatus) onStatus('From cache');
     return _bufferCache.get(cacheKey).slice(0);
   }
 
@@ -122,6 +125,7 @@ export async function fetchTTS(phrase, lang, options = {}) {
   try {
     const cachedResp = await getCachedResponse(cacheKey);
     if (cachedResp) {
+      if (onStatus) onStatus('From cache');
       const buffer = await cachedResp.arrayBuffer();
       _bufferCache.set(cacheKey, buffer);
       return buffer.slice(0);
@@ -131,6 +135,7 @@ export async function fetchTTS(phrase, lang, options = {}) {
   }
 
   // 3. Сеть
+  if (onStatus) onStatus('Generating audio...');
   const params = new URLSearchParams({ phrase, language_code: lang });
   if (model === 'gemini') params.set('model', 'gemini');
   const url = `${TTS_BASE_URL}?${params.toString()}`;

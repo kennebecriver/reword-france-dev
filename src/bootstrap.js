@@ -142,6 +142,7 @@ const listenAutoPlay = createAutoPlay({
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
     fetchTTS,
+    getGeminiMode: geminiModeState.isEnabled,
     getCardData: () => {
         const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
         if (!activeItem) return null;
@@ -165,6 +166,7 @@ const listenAutoPlayFr = createAutoPlayFr({
     goNextInternal: () => ListenEngine._goNextInternal(),
     goBackInternal: () => ListenEngine._goBackInternal(),
     fetchTTS,
+    getGeminiMode: geminiModeState.isEnabled,
     getCardData: () => {
         const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
         if (!activeItem) return null;
@@ -186,6 +188,7 @@ ListenEngine._autoPlayStop = () => {
     listenAutoPlay.stop();
     listenAutoPlayFr.stop();
 };
+ListenEngine._getGeminiMode = geminiModeState.isEnabled;
 
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;

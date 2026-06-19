@@ -127,7 +127,10 @@ export function createCardsEngine({
                 playStatusEl.textContent = 'Generating audio...';
 
                 const model = isGeminiModeEnabled() ? 'gemini' : 'default';
-                const buffer = await fetchTTS(phrase, 'fr-FR', { model });
+                const buffer = await fetchTTS(phrase, 'fr-FR', {
+                    model,
+                    onStatus: (msg) => { playStatusEl.textContent = msg; }
+                });
 
                 const audioBlob = new Blob([buffer]);
                 const audioUrl = URL.createObjectURL(audioBlob);

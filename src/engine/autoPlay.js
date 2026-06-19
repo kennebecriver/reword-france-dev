@@ -85,7 +85,8 @@ function createLowTail(sampleRate, durationMs) {
  *   getCurrentIndex: () => number,
  *   goNextInternal: () => void,
  *   goBackInternal: () => void,
- *   fetchTTS: (phrase: string, lang: string) => Promise<ArrayBuffer>,
+ *   fetchTTS: (phrase: string, lang: string, options?: object) => Promise<ArrayBuffer>,
+ *   getGeminiMode?: () => boolean,
  *   onStateChange: (active: boolean, paused: boolean) => void,
  *   onStepStart?: () => void
  * }} api
@@ -178,7 +179,9 @@ export function createAutoPlay(api) {
 
         const [ruRaw, frRaw] = await Promise.all([
             ruPhrase ? api.fetchTTS(ruPhrase, 'ru-RU') : null,
-            frPhrase ? api.fetchTTS(frPhrase, 'fr-FR') : null
+            frPhrase ? api.fetchTTS(frPhrase, 'fr-FR', {
+                model: api.getGeminiMode?.() ? 'gemini' : 'default'
+            }) : null
         ]);
         if (gen !== _gen) return null;
 
@@ -370,7 +373,7 @@ export function createAutoPlay(api) {
  *   getCurrentIndex: () => number,
  *   goNextInternal: () => void,
  *   goBackInternal: () => void,
- *   fetchTTS: (phrase: string, lang: string) => Promise<ArrayBuffer>,
+ *   fetchTTS: (phrase: string, lang: string, options?: object) => Promise<ArrayBuffer>,
  *   onStateChange: (active: boolean, paused: boolean) => void,
  *   onStepStart?: () => void
  * }} api
@@ -448,7 +451,9 @@ export function createAutoPlayFr(api) {
 
         if (!frPhrase) return null;
 
-        const frRaw = await api.fetchTTS(frPhrase, 'fr-FR');
+        const frRaw = await api.fetchTTS(frPhrase, 'fr-FR', {
+            model: api.getGeminiMode?.() ? 'gemini' : 'default'
+        });
         if (gen !== _gen) return null;
 
         const ctx = new (window.AudioContext || window.webkitAudioContext)();
