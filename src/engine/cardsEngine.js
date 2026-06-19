@@ -1,4 +1,5 @@
 import { shuffleArrayInPlace } from './shuffleUtils.js';
+import { getCachedResponse, setCachedResponse, buildCacheKey } from './ttsCache.js';
 
 // Swipe / queue / audio engine parameterized by DOM scope and Card factory (`createCardEl`).
 /**
@@ -123,11 +124,10 @@ export function createCardsEngine({
             playStatusEl.textContent = 'Loading...';
 
             try {
-                const cacheKey = `tts-${isGeminiModeEnabled() ? 'gemini' : 'default'}-${phrase}`;
-                const cache = await caches.open('tts-audio-cache');
+                const model = isGeminiModeEnabled() ? 'gemini' : 'default';
+                const cacheKey = buildCacheKey('fr-FR', model, phrase);
 
-                const legacyCacheKey = `tts-${phrase}`;
-                let response = (await cache.match(legacyCacheKey)) || (await cache.match(cacheKey));
+                let response = await getCachedResponse(cacheKey);
 
                 if (!response) {
                     playStatusEl.textContent = 'Generating audio...';
@@ -141,7 +141,7 @@ export function createCardsEngine({
                         throw new Error(`Server returned ${response.status}`);
                     }
 
-                    await cache.put(cacheKey, response.clone());
+                    await setCachedResponse(cacheKey, response.clone());
                 }
 
                 const audioBlob = await response.blob();

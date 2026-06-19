@@ -129,13 +129,16 @@ function setOnAirButtonState(isActive, isPaused) {
 function setOnAirFrButtonState(isActive, isPaused) {
     const btn = listenShell.onairFrBtnEl;
     if (isActive && !isPaused) {
-        btn.classList.add('onair-active');
+        btn.textContent = '⏹';
+        btn.classList.add('onair-active', 'onair-active-fr');
         btn.title = 'Stop French-only auto-play';
     } else if (isActive && isPaused) {
-        btn.classList.add('onair-active');
+        btn.textContent = '⏸';
+        btn.classList.add('onair-active', 'onair-active-fr');
         btn.title = 'Resume French-only auto-play';
     } else {
-        btn.classList.remove('onair-active');
+        btn.textContent = '🇫🇷';
+        btn.classList.remove('onair-active', 'onair-active-fr');
         btn.title = 'French only';
     }
 }
@@ -214,6 +217,9 @@ function bindListenChrome(shell, engine) {
     shell.playBtn.addEventListener('click', () => engine.playActiveCard());
     shell.repeatBtn.addEventListener('click', () => engine.goNext());
     shell.onairBtnEl.addEventListener('click', () => {
+        if (listenAutoPlayFr.isPlaying() || listenAutoPlayFr.isPaused()) {
+            listenAutoPlayFr.stop();
+        }
         if (listenAutoPlay.isPlaying() || listenAutoPlay.isPaused()) {
             listenAutoPlay.togglePause();
         } else {
@@ -221,6 +227,9 @@ function bindListenChrome(shell, engine) {
         }
     });
     shell.onairFrBtnEl.addEventListener('click', () => {
+        if (listenAutoPlay.isPlaying() || listenAutoPlay.isPaused()) {
+            listenAutoPlay.stop();
+        }
         if (listenAutoPlayFr.isPlaying() || listenAutoPlayFr.isPaused()) {
             listenAutoPlayFr.togglePause();
         } else {

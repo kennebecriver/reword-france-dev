@@ -67,6 +67,8 @@ export function mountDeckShell(viewRoot, options = {}) {
     if (options.hideOnAir) {
         onairBtnEl.style.display = 'none';
         onairBtnEl.disabled = true;
+        onairFrBtnEl.style.display = 'none';
+        onairFrBtnEl.disabled = true;
     }
 
     return {

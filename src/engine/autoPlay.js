@@ -17,37 +17,16 @@
 
 // ─── GLOBAL AUDIO ELEMENT ─────────────────────────────────────────────
 
+import { fetchTTS, buildCacheKey } from './ttsCache.js';
+
+export { fetchTTS, buildCacheKey };
+
 /** @type {HTMLAudioElement} */
 export const bgAudio = new Audio();
 bgAudio.preload = 'auto';
 bgAudio.volume = 1.0;
 
 // ─── UTILITIES ─────────────────────────────────────────────────────────
-
-/**
- * Fetch TTS audio and return raw ArrayBuffer.
- * Caches responses in memory by language+phrase key.
- * @param {string} phrase
- * @param {string} languageCode — e.g. 'ru-RU', 'fr-FR'
- * @returns {Promise<ArrayBuffer>}
- */
-const _ttsCache = {};
-
-export async function fetchTTS(phrase, languageCode) {
-    const cacheKey = `tts-${languageCode}-${phrase}`;
-    if (_ttsCache[cacheKey]) return _ttsCache[cacheKey].slice(0);
-
-    const TTS_BASE_URL = 'https://reword-france-463001342259.northamerica-northeast2.run.app/get_voice';
-    const model = languageCode === 'fr-FR' ? 'gemini' : '';
-    const params = new URLSearchParams({ phrase, language_code: languageCode, model });
-    const url = `${TTS_BASE_URL}?${params.toString()}`;
-    const response = await fetch(url);
-    if (!response.ok) throw new Error(`TTS server returned ${response.status}`);
-
-    const buffer = await response.arrayBuffer();
-    _ttsCache[cacheKey] = buffer;
-    return buffer.slice(0);
-}
 
 /**
  * Encode an AudioBuffer to 16-bit PCM WAV (RIFF) and return a Blob of type 'audio/wav'.
