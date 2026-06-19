@@ -33,19 +33,7 @@ listenShell.repeatBtn.textContent = 'Next';
 listenShell.repeatBtn.classList.remove('btn-repeat');
 listenShell.repeatBtn.classList.add('btn-nav-next');
 
-function hideGeminiToggle(shell) {
-    const geminiToggle = shell.geminiToggle;
-    if (!geminiToggle) return;
-
-    const label = geminiToggle.closest('label');
-    const caption = label?.nextElementSibling;
-    if (label) label.style.display = 'none';
-    if (caption?.classList?.contains('toggle-label')) caption.style.display = 'none';
-    geminiToggle.disabled = true;
-}
-
-const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle]);
-hideGeminiToggle(listenShell);
+const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle, listenShell.geminiToggle]);
 
 const api = createSheetsApi(runtimeConfig);
 

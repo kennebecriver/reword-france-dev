@@ -39,7 +39,7 @@ function syncGeminiChecked(toggles, checked) {
  */
 export function initGeminiModeToggle(geminiToggleInputs = []) {
     const path = window.location.pathname;
-    let isGeminiMode = path.includes('/GEMINI_TTS/');
+    let isGeminiMode = !path.includes('/NO_GEMINI/');
 
     const toggles = geminiToggleInputs.filter(Boolean);
 
