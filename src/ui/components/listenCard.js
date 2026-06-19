@@ -10,6 +10,7 @@ export function createListenCard(data) {
     card.dataset.t1 = data.text1;
     card.dataset.t2 = data.text2;
     card.dataset.t3 = data.text3 ?? '';
+    card.dataset.rowIndex = data.rowIndex ?? '';
 
     const body = document.createElement('div');
     body.className = 'card-body';

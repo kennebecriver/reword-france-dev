@@ -17,6 +17,7 @@ export function createListenEngine({
 }) {
     let currentIndex = 0;
     let playGeneration = 0;
+    let currentDeckName = null;
 
     const cancelPlaySequence = () => {
         playGeneration += 1;
@@ -36,6 +37,7 @@ export function createListenEngine({
         initDeck(name) {
             if (typeof engine._autoPlayStop === 'function') engine._autoPlayStop();
             engine._isPlaying = false;
+            currentDeckName = name;
             store[sessionKey] = [...store.appData[name]];
             currentIndex = 0;
             deckTitleEl.textContent = name;
@@ -56,7 +58,12 @@ export function createListenEngine({
             renderListenList(stage, deck, currentIndex, (index) => {
                 currentIndex = index;
                 engine.renderCard(true);
-            }, autoScroll);
+            }, autoScroll, (rowIndex) => {
+                // Delete callback
+                if (typeof engine._onDeleteCard === 'function') {
+                    engine._onDeleteCard(currentDeckName, rowIndex);
+                }
+            });
 
             engine.updateCounter();
             engine.updateNavButtons();
@@ -189,6 +196,7 @@ export function createListenEngine({
     engine._onCardRendered = null;
     engine._autoPlayStop = null;
     engine._getGeminiMode = null;
+    engine._onDeleteCard = null;
 
     return engine;
 }

@@ -11,6 +11,7 @@ import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
 import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
+import { filterDeletedRows, markRowDeleted } from './state/deletionManager.js';
 
 const runtimeConfig = getRuntimeConfig();
 
@@ -205,6 +206,18 @@ ListenEngine._autoPlayStop = () => {
     listenAutoPlayFr.stop();
 };
 ListenEngine._getGeminiMode = geminiModeState.isEnabled;
+ListenEngine._onDeleteCard = (deckName, rowIndex) => {
+    const sheetId = runtimeConfig.sheetId;
+    markRowDeleted(sheetId, deckName, rowIndex);
+    // Remove from current session
+    store.listenSession = store.listenSession.filter(card => card.rowIndex !== rowIndex);
+    // Also remove from appData
+    if (store.appData[deckName]) {
+        store.appData[deckName] = store.appData[deckName].filter(card => card.rowIndex !== rowIndex);
+    }
+    // Re-render
+    ListenEngine.renderCard(true);
+};
 
 window.Engine = Engine;
 window.DictationEngine = DictationEngine;
@@ -349,7 +362,14 @@ function bindShuffleButtons() {
 function bootstrapApp() {
     window.onload = async () => {
         try {
-            store.appData = await api.fetchData();
+            const rawData = await api.fetchData();
+            // Filter out rows marked as deleted
+            const sheetId = runtimeConfig.sheetId;
+            const filteredData = {};
+            for (const [name, cards] of Object.entries(rawData)) {
+                filteredData[name] = filterDeletedRows(cards, sheetId, name);
+            }
+            store.appData = filteredData;
             renderTopics(store.appData, {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),

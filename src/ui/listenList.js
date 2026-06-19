@@ -15,8 +15,9 @@ import { createListenCard } from './components/listenCard.js';
  * @param {number} activeIndex - Index of the currently active card
  * @param {(index: number) => void} onCardClick - Callback when a list item is clicked
  * @param {boolean} [autoScroll=false] - Whether to auto-scroll to the active card
+ * @param {(rowIndex: number) => void} [onDeleteCard] - Callback when delete button is clicked
  */
-export function renderListenList(container, deck, activeIndex, onCardClick, autoScroll = false) {
+export function renderListenList(container, deck, activeIndex, onCardClick, autoScroll = false, onDeleteCard = null) {
     // If container is empty or deck size changed, rebuild the list
     const needsRebuild = container.children.length === 0 || container.children.length !== deck.length;
 
@@ -43,9 +44,23 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
             listItem.appendChild(marker);
             listItem.appendChild(card);
 
+            // Add delete button if callback provided
+            if (onDeleteCard && data.rowIndex) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'listen-card-delete-btn';
+                deleteBtn.type = 'button';
+                deleteBtn.textContent = '🗑';
+                deleteBtn.title = 'Mark as deleted';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    onDeleteCard(data.rowIndex);
+                });
+                listItem.appendChild(deleteBtn);
+            }
+
             listItem.addEventListener('click', (e) => {
-                // Ignore clicks on the eye reveal button to avoid selecting the card
-                if (e.target.closest('.reveal-btn')) return;
+                // Ignore clicks on the eye reveal button or delete button to avoid selecting the card
+                if (e.target.closest('.reveal-btn') || e.target.closest('.listen-card-delete-btn')) return;
                 onCardClick(index);
             });
 

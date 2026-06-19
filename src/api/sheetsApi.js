@@ -24,8 +24,14 @@ export function createSheetsApi(config) {
                 const name = sheetNames[idx];
                 const rows = range.values || [];
                 const cards = rows
-                    .filter((row) => row[0] && row[0] !== 'text1')
-                    .map((row) => ({ text1: row[0], text2: row[1] || '', text3: row[2] || '' }));
+                    .map((row, arrayIndex) => ({ row, arrayIndex }))
+                    .filter(({ row }) => row[0] && row[0] !== 'text1')
+                    .map(({ row, arrayIndex }) => ({
+                        text1: row[0],
+                        text2: row[1] || '',
+                        text3: row[2] || '',
+                        rowIndex: arrayIndex + 1 // 1-indexed, row 1 is headers
+                    }));
 
                 if (cards.length > 0) result[name] = cards;
             });
