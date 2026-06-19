@@ -319,9 +319,15 @@ function initAutoPlay() {
 }
 
 function bindShuffleButtons() {
-    studyShell.shuffleBtnEl.addEventListener('click', () => Engine.shuffleDeck());
-    dictShell.shuffleBtnEl.addEventListener('click', () => DictationEngine.shuffleDeck());
-    listenShell.shuffleBtnEl.addEventListener('click', () => ListenEngine.shuffleDeck());
+    if (studyShell.shuffleBtnEl) {
+        studyShell.shuffleBtnEl.addEventListener('click', () => Engine.shuffleDeck());
+    }
+    if (dictShell.shuffleBtnEl) {
+        dictShell.shuffleBtnEl.addEventListener('click', () => DictationEngine.shuffleDeck());
+    }
+    if (listenShell.shuffleBtnEl) {
+        listenShell.shuffleBtnEl.addEventListener('click', () => ListenEngine.shuffleDeck());
+    }
 }
 
 function bootstrapApp() {

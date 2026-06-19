@@ -6,6 +6,10 @@ function qs(root, selector) {
     return node;
 }
 
+function qso(root, selector) {
+    return root.querySelector(selector);
+}
+
 /**
  * @param {HTMLElement} viewRoot - e.g. #view-deck
  * @param {{ idSuffix?: string, hideAutoPlay?: boolean, hideOnAir?: boolean }} [options]
@@ -28,7 +32,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     const deckTitleEl = qs(deckRoot, '.deck-shell-title');
     const stage = qs(deckRoot, '.deck-card-stage');
     const deckCounterEl = qs(deckRoot, '.deck-shell-counter');
-    const shuffleBtnEl = qs(deckRoot, '.deck-shuffle-btn');
+    const shuffleBtnEl = qso(deckRoot, '.deck-shuffle-btn');
     const onairBtnEl = qs(deckRoot, '.deck-onair-btn');
     const onairFrBtnEl = qs(deckRoot, '.deck-onair-fr-btn');
     const playStatusEl = qs(deckRoot, '.deck-play-status');
@@ -42,7 +46,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     deckTitleEl.id = withId('deck-title');
     stage.id = withId('card-stage');
     deckCounterEl.id = withId('deck-counter');
-    shuffleBtnEl.id = withId('shuffle-btn');
+    if (shuffleBtnEl) shuffleBtnEl.id = withId('shuffle-btn');
     onairBtnEl.id = withId('onair-btn');
     onairFrBtnEl.id = withId('onair-fr-btn');
     playStatusEl.id = withId('play-status');
