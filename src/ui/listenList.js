@@ -49,7 +49,7 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'listen-card-delete-btn';
                 deleteBtn.type = 'button';
-                deleteBtn.textContent = '🗑';
+                deleteBtn.textContent = '␡';
                 deleteBtn.title = 'Mark as deleted';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
