@@ -24,15 +24,8 @@ function getStorageKey(sheetId, sheetName) {
  * @returns {Set<number>}
  */
 export function getDeletedRows(sheetId, sheetName) {
-    const key = getStorageKey(sheetId, sheetName);
-    const stored = localStorage.getItem(key);
-    if (!stored) return new Set();
-    try {
-        const arr = JSON.parse(stored);
-        return new Set(Array.isArray(arr) ? arr : []);
-    } catch {
-        return new Set();
-    }
+    // Stub: deletion tracking disabled for now
+    return new Set();
 }
 
 /**

@@ -22,6 +22,13 @@ This file provides an overview of the project's structure and data flows for Rew
   - `store` is mutable. Convention: only bootstrap and engines should modify `store.appData` and session keys.
   - `shuffleTopicSourceDeck` currently mutates `store.appData` in-place.
 
+- Deletion mechanism (Listen mode):
+  - `src/state/deletionManager.js` tracks deleted rows per sheet in `localStorage`.
+  - Storage key format: `reword_deleted_rows_{sheetId}_{sheetName}`.
+  - Flow: UI button click → `listenList.js` callback → `listenEngine._onDeleteCard` hook → `bootstrap.js` handler → `deletionManager.markRowDeleted/markRowRestored`.
+  - Deleted rows are filtered out on next app load via `filterDeletedRows()`.
+  - Cards remain visible in current session until reload.
+
 - Recommendations:
   - Document the audio subsystem (`docs/AUDIO.md`).
   - Consider consolidating `window.*` globals into a single `app` namespace.
