@@ -489,7 +489,7 @@ body {
 }
 
 .listen-card-delete-btn:hover {
-    background: rgba(239, 68, 68, 0.2);
+    background: var(--accent);
     color: #ef4444;
 }
 
