@@ -54,7 +54,7 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isMarked = listItem.classList.toggle('marked-deleted');
-                    deleteBtn.textContent = isMarked ? '↩' : '🗑';
+                    deleteBtn.textContent = isMarked ? '↩' : '␡';
                     onDeleteCard(data.rowIndex, isMarked);
                 });
                 listItem.appendChild(deleteBtn);
