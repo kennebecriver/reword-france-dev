@@ -15,7 +15,7 @@ export function createSheetsApi(config) {
             if (meta.error) throw new Error(meta.error.message);
 
             const sheetNames = meta.sheets.map((sheet) => sheet.properties.title);
-            const ranges = sheetNames.map((name) => `${name}!A1:C2000`).join('&ranges=');
+            const ranges = sheetNames.map((name) => `${name}!A1:C5000`).join('&ranges=');
             const dataRes = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values:batchGet?key=${config.apiKey}&ranges=${ranges}`);
             const dataJSON = await dataRes.json();
 
