@@ -58,10 +58,10 @@ export function createListenEngine({
             renderListenList(stage, deck, currentIndex, (index) => {
                 currentIndex = index;
                 engine.renderCard(true);
-            }, autoScroll, (rowIndex) => {
+            }, autoScroll, (rowIndex, isMarked) => {
                 // Delete callback
                 if (typeof engine._onDeleteCard === 'function') {
-                    engine._onDeleteCard(currentDeckName, rowIndex);
+                    engine._onDeleteCard(currentDeckName, rowIndex, isMarked);
                 }
             });
 

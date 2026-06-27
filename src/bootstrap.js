@@ -11,7 +11,7 @@ import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
 import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
-import { filterDeletedRows, markRowDeleted, markRowRestored } from './state/deletionManager.js';
+import { applyMarks, markRowDeleted, markRowRestored } from './state/deletionManager.js';
 
 const runtimeConfig = getRuntimeConfig();
 
@@ -370,13 +370,13 @@ function bootstrapApp() {
     window.onload = async () => {
         try {
             const rawData = await api.fetchData();
-            // Filter out rows marked as deleted
+            // Apply marks to rows previously marked as deleted
             const sheetId = runtimeConfig.sheetId;
-            const filteredData = {};
+            const markedData = {};
             for (const [name, cards] of Object.entries(rawData)) {
-                filteredData[name] = filterDeletedRows(cards, sheetId, name);
+                markedData[name] = applyMarks(cards, sheetId, name);
             }
-            store.appData = filteredData;
+            store.appData = markedData;
             renderTopics(store.appData, {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),

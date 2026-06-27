@@ -1,11 +1,15 @@
 /**
- * deletionManager.js — Tracks deleted rows per sheet.
+ * deletionManager.js — Tracks marked rows per sheet.
  *
- * Stores deleted row indices in localStorage, keyed by sheetId + sheetName.
- * On next app load, these rows are excluded from decks.
+ * Stores hashed row identifiers in localStorage, keyed by sheetId + sheetName.
+ * On next app load, these rows are marked with isMarked=true (not hidden).
+ * Also calls /color_row API to paint/unpaint rows in the Google Sheet.
  */
 
-const STORAGE_PREFIX = 'reword_deleted_rows_';
+import { djb2 } from '../engine/hash.js';
+
+const STORAGE_PREFIX = 'reword_marked_rows_';
+const COLOR_ROW_URL = 'https://reword-france-463001342259.northamerica-northeast2.run.app/color_row';
 
 /**
  * Get the localStorage key for a specific sheet.
@@ -18,51 +22,98 @@ function getStorageKey(sheetId, sheetName) {
 }
 
 /**
- * Get all deleted row indices for a sheet.
+ * Compute a unique hash for a row.
  * @param {string} sheetId
  * @param {string} sheetName
- * @returns {Set<number>}
+ * @param {number} rowIndex
+ * @returns {string}
  */
-export function getDeletedRows(sheetId, sheetName) {
-    // Stub: deletion tracking disabled for now
-    return new Set();
+function rowHash(sheetId, sheetName, rowIndex) {
+    return djb2(`${sheetId}:${sheetName}:${rowIndex}`);
 }
 
 /**
- * Mark a row as deleted.
+ * Get all marked row hashes for a sheet.
+ * @param {string} sheetId
+ * @param {string} sheetName
+ * @returns {Set<string>}
+ */
+export function getMarkedRows(sheetId, sheetName) {
+    const key = getStorageKey(sheetId, sheetName);
+    const raw = localStorage.getItem(key);
+    if (!raw) return new Set();
+    try {
+        return new Set(JSON.parse(raw));
+    } catch {
+        return new Set();
+    }
+}
+
+/**
+ * Save marked rows to localStorage.
+ * @param {string} sheetId
+ * @param {string} sheetName
+ * @param {Set<string>} marked
+ */
+function saveMarkedRows(sheetId, sheetName, marked) {
+    const key = getStorageKey(sheetId, sheetName);
+    localStorage.setItem(key, JSON.stringify([...marked]));
+}
+
+/**
+ * Call /color_row API to paint or unpaint a row.
+ * @param {string} sheetId
+ * @param {string} sheetName
+ * @param {number} rowIndex
+ * @param {boolean} paint
+ */
+function callColorRow(sheetId, sheetName, rowIndex, paint) {
+    fetch(COLOR_ROW_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sheetId, sheetName, rowIndex, paint: paint ? 1 : 0 })
+    }).catch(err => console.warn('color_row failed:', err));
+}
+
+/**
+ * Mark a row as deleted (paint yellow + save hash).
  * @param {string} sheetId
  * @param {string} sheetName
  * @param {number} rowIndex - 1-indexed row number
  */
 export function markRowDeleted(sheetId, sheetName, rowIndex) {
-    const deleted = getDeletedRows(sheetId, sheetName);
-    deleted.add(rowIndex);
-    const key = getStorageKey(sheetId, sheetName);
-    //localStorage.setItem(key, JSON.stringify([...deleted]));
+    const marked = getMarkedRows(sheetId, sheetName);
+    marked.add(rowHash(sheetId, sheetName, rowIndex));
+    saveMarkedRows(sheetId, sheetName, marked);
+    callColorRow(sheetId, sheetName, rowIndex, true);
 }
 
 /**
- * Unmark a row as deleted (restore it).
+ * Unmark a row (unpaint + remove hash).
  * @param {string} sheetId
  * @param {string} sheetName
  * @param {number} rowIndex
  */
 export function markRowRestored(sheetId, sheetName, rowIndex) {
-    const deleted = getDeletedRows(sheetId, sheetName);
-    deleted.delete(rowIndex);
-    const key = getStorageKey(sheetId, sheetName);
-    //localStorage.setItem(key, JSON.stringify([...deleted]));
+    const marked = getMarkedRows(sheetId, sheetName);
+    marked.delete(rowHash(sheetId, sheetName, rowIndex));
+    saveMarkedRows(sheetId, sheetName, marked);
+    callColorRow(sheetId, sheetName, rowIndex, false);
 }
 
 /**
- * Filter out deleted rows from a deck.
+ * Apply marks to cards: set isMarked=true for rows that were previously marked.
+ * Does NOT filter out — cards stay visible.
  * @param {Array} cards - Array of card objects with rowIndex property
  * @param {string} sheetId
  * @param {string} sheetName
  * @returns {Array}
  */
-export function filterDeletedRows(cards, sheetId, sheetName) {
-    const deleted = getDeletedRows(sheetId, sheetName);
-    if (deleted.size === 0) return cards;
-    return cards.filter(card => !deleted.has(card.rowIndex));
+export function applyMarks(cards, sheetId, sheetName) {
+    const marked = getMarkedRows(sheetId, sheetName);
+    if (marked.size === 0) return cards;
+    return cards.map(card => ({
+        ...card,
+        isMarked: marked.has(rowHash(sheetId, sheetName, card.rowIndex))
+    }));
 }

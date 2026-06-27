@@ -44,13 +44,19 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
             listItem.appendChild(marker);
             listItem.appendChild(card);
 
+            // Apply marked state if card was previously marked
+            if (data.isMarked) {
+                listItem.classList.add('marked-deleted');
+            }
+
             // Add delete button if callback provided
             if (onDeleteCard && data.rowIndex) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'listen-card-delete-btn';
                 deleteBtn.type = 'button';
-                deleteBtn.textContent = '❌';
-                deleteBtn.title = 'Mark as deleted';
+                const isAlreadyMarked = !!data.isMarked;
+                deleteBtn.textContent = isAlreadyMarked ? '↩' : '❌';
+                deleteBtn.title = isAlreadyMarked ? 'Restore' : 'Mark as deleted';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isMarked = listItem.classList.toggle('marked-deleted');
