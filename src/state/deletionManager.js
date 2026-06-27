@@ -38,7 +38,7 @@ export function markRowDeleted(sheetId, sheetName, rowIndex) {
     const deleted = getDeletedRows(sheetId, sheetName);
     deleted.add(rowIndex);
     const key = getStorageKey(sheetId, sheetName);
-    localStorage.setItem(key, JSON.stringify([...deleted]));
+    //localStorage.setItem(key, JSON.stringify([...deleted]));
 }
 
 /**
@@ -51,7 +51,7 @@ export function markRowRestored(sheetId, sheetName, rowIndex) {
     const deleted = getDeletedRows(sheetId, sheetName);
     deleted.delete(rowIndex);
     const key = getStorageKey(sheetId, sheetName);
-    localStorage.setItem(key, JSON.stringify([...deleted]));
+    //localStorage.setItem(key, JSON.stringify([...deleted]));
 }
 
 /**
