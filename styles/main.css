@@ -446,9 +446,9 @@ body {
     z-index: 2;
 }
 
-.listen-list-item.active .listen-card-marker {
+.listen-list-item.marked-deleted .listen-card-marker {
     background: rgba(239, 68, 68, 0.3);
-    color: var(--text-muted);
+    color: #ef4444;
 }
 
 .listen-list-item.marked-deleted {
@@ -462,7 +462,7 @@ body {
 }
 
 .listen-list-item.marked-deleted .listen-card-delete-btn {
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
     opacity: 1;
 }
@@ -498,12 +498,12 @@ body {
     color: #ef4444;
 }
 
-.listen-list-item.active .listen-card-delete-btn {
+.listen-list-item.active.marked-deleted .listen-card-delete-btn {
     background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
 }
 
-.listen-list-item.active .listen-card-delete-btn:hover {
+.listen-list-item.active.marked-deleted .listen-card-delete-btn:hover {
     background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
 }
