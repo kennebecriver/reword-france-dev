@@ -447,8 +447,8 @@ body {
 }
 
 .listen-list-item.active .listen-card-marker {
-    background: var(--accent);
-    color: white;
+    background: rgba(239, 68, 68, 0.3);
+    color: var(--text-muted);
 }
 
 .listen-list-item.marked-deleted {
