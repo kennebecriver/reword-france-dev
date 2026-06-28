@@ -461,6 +461,10 @@ body {
     opacity: 0.6;
 }
 
+.listen-list-item.marked-deleted .card-text-primary {
+    color: #ef4444;
+}
+
 .listen-list-item.marked-deleted .listen-card-delete-btn {
     background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
