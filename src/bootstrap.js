@@ -26,7 +26,7 @@ if (!studyViewEl || !dictationViewEl || !listenViewEl) {
 
 const studyShell = mountDeckShell(studyViewEl, { idSuffix: '', hideOnAir: true });
 const dictShell = mountDeckShell(dictationViewEl, { idSuffix: 'dictation-', hideOnAir: true });
-const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-', hideAutoPlay: true });
+const listenShell = mountDeckShell(listenViewEl, { idSuffix: 'listen-', hideAutoPlay: true, showRevealToggle: true });
 
 listenShell.doneBtn.textContent = 'Back';
 listenShell.doneBtn.classList.remove('btn-done');
@@ -36,6 +36,28 @@ listenShell.repeatBtn.classList.remove('btn-repeat');
 listenShell.repeatBtn.classList.add('btn-nav-next');
 
 const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle, listenShell.geminiToggle]);
+
+// ─── Reveal toggle for Listen mode ─────────────────────────────────────
+if (listenShell.revealToggle) {
+    listenShell.revealToggle.checked = true; // default: reveal-btn hidden
+    listenShell.revealToggle.addEventListener('change', (e) => {
+        const hideReveals = e.target.checked;
+        const btns = listenShell.stage.querySelectorAll('.reveal-btn');
+        btns.forEach((btn) => {
+            btn.style.display = hideReveals ? 'none' : '';
+        });
+        // Also hide/show the eye-zone container
+        const eyeZones = listenShell.stage.querySelectorAll('.card-eye-zone');
+        eyeZones.forEach((zone) => {
+            zone.style.display = hideReveals ? 'none' : '';
+        });
+    });
+    // Apply initial state: hide all reveal-btn
+    const initialBtns = listenShell.stage.querySelectorAll('.reveal-btn');
+    initialBtns.forEach((btn) => { btn.style.display = 'none'; });
+    const initialEyes = listenShell.stage.querySelectorAll('.card-eye-zone');
+    initialEyes.forEach((zone) => { zone.style.display = 'none'; });
+}
 
 const api = createSheetsApi(runtimeConfig);
 

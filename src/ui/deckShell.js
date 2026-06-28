@@ -37,6 +37,9 @@ export function mountDeckShell(viewRoot, options = {}) {
     const playStatusEl = qs(deckRoot, '.deck-play-status');
     const autoPlayToggle = qs(deckRoot, '.deck-auto-play-toggle');
     const geminiToggle = qs(deckRoot, '.deck-gemini-toggle');
+    const revealToggleWrapper = qso(deckRoot, '.deck-reveal-toggle-wrapper');
+    const revealToggle = qso(deckRoot, '.deck-reveal-toggle');
+    const revealToggleLabel = qso(deckRoot, '.deck-reveal-toggle-label');
     const backBtn = qs(deckRoot, '.deck-back-btn');
     const doneBtn = qs(deckRoot, '.deck-btn-done');
     const playBtn = qs(deckRoot, '.deck-btn-play');
@@ -62,6 +65,11 @@ export function mountDeckShell(viewRoot, options = {}) {
         autoPlayToggle.disabled = true;
     }
 
+    if (options.showRevealToggle) {
+        if (revealToggleWrapper) revealToggleWrapper.style.display = '';
+        if (revealToggleLabel) revealToggleLabel.style.display = '';
+    }
+
     if (options.hideOnAir) {
         onairBtnEl.style.display = 'none';
         onairBtnEl.disabled = true;
@@ -79,6 +87,7 @@ export function mountDeckShell(viewRoot, options = {}) {
         playStatusEl,
         autoPlayToggle,
         geminiToggle,
+        revealToggle,
         backBtn,
         doneBtn,
         playBtn,
