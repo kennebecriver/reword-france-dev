@@ -43,6 +43,7 @@ export function createListenEngine({
             // Try to restore from localStorage history
             const history = sheetId ? loadListenHistory(sheetId, name) : null;
             const sourceDeck = store.appData[name];
+            console.log('initDeck:', name, 'history:', history, 'sourceDeck:', sourceDeck.map(c => c.rowIndex));
             
             if (history && history.cardCount === sourceDeck.length) {
                 // Restore order from history

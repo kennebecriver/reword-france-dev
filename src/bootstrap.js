@@ -373,8 +373,11 @@ function bootstrapApp() {
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
                 onListenClick: (deckName) => ListenEngine.initDeck(deckName),
                 onShuffleDeck: (deckName) => {
+                    console.log('Before shuffle:', store.appData[deckName].map(c => c.rowIndex));
                     shuffleTopicSourceDeck(store, deckName);
+                    console.log('After shuffle:', store.appData[deckName].map(c => c.rowIndex));
                     clearListenHistory(runtimeConfig.sheetId, deckName);
+                    console.log('History cleared for', deckName);
                 },
                 onResetHistory: (deckName) => clearListenHistory(runtimeConfig.sheetId, deckName)
             });
