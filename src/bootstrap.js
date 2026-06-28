@@ -50,8 +50,7 @@ const Engine = createCardsEngine({
         stage: studyShell.stage,
         deckTitleEl: studyShell.deckTitleEl,
         deckCounterEl: studyShell.deckCounterEl,
-        playStatusEl: studyShell.playStatusEl,
-        shuffleBtnEl: studyShell.shuffleBtnEl
+        playStatusEl: studyShell.playStatusEl
     }
 });
 
@@ -76,8 +75,7 @@ const DictationEngine = createCardsEngine({
         stage: dictShell.stage,
         deckTitleEl: dictShell.deckTitleEl,
         deckCounterEl: dictShell.deckCounterEl,
-        playStatusEl: dictShell.playStatusEl,
-        shuffleBtnEl: dictShell.shuffleBtnEl
+        playStatusEl: dictShell.playStatusEl
     }
 });
 
@@ -92,7 +90,6 @@ const ListenEngine = createListenEngine({
         deckTitleEl: listenShell.deckTitleEl,
         deckCounterEl: listenShell.deckCounterEl,
         playStatusEl: listenShell.playStatusEl,
-        shuffleBtnEl: listenShell.shuffleBtnEl,
         backNavBtn: listenShell.doneBtn,
         nextNavBtn: listenShell.repeatBtn
     }
@@ -357,15 +354,7 @@ function initAutoPlay() {
 }
 
 function bindShuffleButtons() {
-    if (studyShell.shuffleBtnEl) {
-        studyShell.shuffleBtnEl.addEventListener('click', () => Engine.shuffleDeck());
-    }
-    if (dictShell.shuffleBtnEl) {
-        dictShell.shuffleBtnEl.addEventListener('click', () => DictationEngine.shuffleDeck());
-    }
-    if (listenShell.shuffleBtnEl) {
-        listenShell.shuffleBtnEl.addEventListener('click', () => ListenEngine.shuffleDeck());
-    }
+    // Shuffle buttons removed from deck views - only topic-level shuffle remains
 }
 
 function bootstrapApp() {

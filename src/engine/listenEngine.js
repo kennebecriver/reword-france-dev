@@ -1,4 +1,3 @@
-import { shuffleArrayInPlace } from './shuffleUtils.js';
 import { bgAudio, fetchTTS } from './autoPlay.js';
 import { renderListenList } from '../ui/listenList.js';
 import { loadListenHistory, saveListenHistory } from '../state/listenHistory.js';
@@ -15,7 +14,7 @@ export function createListenEngine({
     showView,
     onAfterRender,
     sheetId,
-    dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl, backNavBtn, nextNavBtn }
+    dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, backNavBtn, nextNavBtn }
 }) {
     let currentIndex = 0;
     let playGeneration = 0;
@@ -152,26 +151,6 @@ export function createListenEngine({
         updateCounter() {
             const total = store[sessionKey].length;
             deckCounterEl.textContent = total ? `${currentIndex + 1} / ${total}` : '0';
-        },
-
-        shuffleDeck() {
-            const deck = store[sessionKey];
-            if (!deck || deck.length < 2) return;
-            if (typeof engine._autoPlayStop === 'function') engine._autoPlayStop();
-            shuffleArrayInPlace(deck);
-            currentIndex = 0;
-            engine.renderCard(true);
-            
-            // Save shuffled order to localStorage
-            if (sheetId && currentDeckName) {
-                const order = deck.map(card => card.rowIndex);
-                saveListenHistory(sheetId, currentDeckName, order, currentIndex);
-            }
-            
-            if (shuffleBtnEl) {
-                shuffleBtnEl.classList.add('shuffling');
-                setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
-            }
         },
 
         /**

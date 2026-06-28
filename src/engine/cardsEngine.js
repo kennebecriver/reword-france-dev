@@ -1,4 +1,3 @@
-import { shuffleArrayInPlace } from './shuffleUtils.js';
 import { fetchTTS } from './ttsCache.js';
 
 // Swipe / queue / audio engine parameterized by DOM scope and Card factory (`createCardEl`).
@@ -15,7 +14,7 @@ export function createCardsEngine({
     isGeminiModeEnabled,
     buildCard,
     onAfterSpawn,
-    dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl }
+    dom: { stage, deckTitleEl, deckCounterEl, playStatusEl }
 }) {
     return {
         THRESHOLD: 100,
@@ -181,26 +180,5 @@ export function createCardsEngine({
             if (total === 0) showView('topics');
         },
 
-        shuffleDeck() {
-            shuffleArrayInPlace(store[sessionKey]);
-
-            const nextCard = stage.firstElementChild;
-
-            if (nextCard && store[sessionKey].length > 0) {
-                const newData = store[sessionKey].shift();
-                const newNext = buildCard(newData);
-                newNext.className = newNext.classList.contains('dictation-card')
-                    ? 'card dictation-card card-next animating'
-                    : 'card card-next animating';
-                nextCard.replaceWith(newNext);
-            }
-
-            if (shuffleBtnEl) {
-                shuffleBtnEl.classList.add('shuffling');
-                setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
-            }
-
-            console.log(`Deck shuffled: ${store[sessionKey].length} cards in queue`);
-        }
     };
 }
