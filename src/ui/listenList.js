@@ -55,12 +55,12 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
                 deleteBtn.className = 'listen-card-delete-btn';
                 deleteBtn.type = 'button';
                 const isAlreadyMarked = !!data.isMarked;
-                deleteBtn.textContent = isAlreadyMarked ? '↩' : '❌';
+                deleteBtn.textContent = isAlreadyMarked ? '↩' : '⤫';
                 deleteBtn.title = isAlreadyMarked ? 'Restore' : 'Mark as deleted';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     const isMarked = listItem.classList.toggle('marked-deleted');
-                    deleteBtn.textContent = isMarked ? '↩' : '❌';
+                    deleteBtn.textContent = isMarked ? '↩' : '⤫';
                     onDeleteCard(data.rowIndex, isMarked);
                 });
                 listItem.appendChild(deleteBtn);
