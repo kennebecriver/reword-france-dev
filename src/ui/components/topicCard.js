@@ -66,7 +66,7 @@ export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClic
         const resetBtn = document.createElement('button');
         resetBtn.type = 'button';
         resetBtn.className = 'shuffle-btn topic-reset-btn';
-        resetBtn.textContent = '🔄';
+        resetBtn.textContent = '↺';
         resetBtn.title = 'Reset listen history';
         resetBtn.setAttribute('aria-label', 'Reset listen history');
         resetBtn.addEventListener('click', (event) => {
