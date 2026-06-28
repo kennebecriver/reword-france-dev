@@ -446,6 +446,11 @@ body {
     z-index: 2;
 }
 
+.listen-list-item.active:not(.marked-deleted) .listen-card-marker {
+    background: var(--accent);
+    color: #ffffff;
+}
+
 .listen-list-item.marked-deleted .listen-card-marker {
     background: rgba(239, 68, 68, 0.3);
     color: #ef4444;
