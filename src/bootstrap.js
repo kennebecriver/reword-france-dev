@@ -372,7 +372,10 @@ function bootstrapApp() {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
                 onListenClick: (deckName) => ListenEngine.initDeck(deckName),
-                onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName),
+                onShuffleDeck: (deckName) => {
+                    shuffleTopicSourceDeck(store, deckName);
+                    clearListenHistory(runtimeConfig.sheetId, deckName);
+                },
                 onResetHistory: (deckName) => clearListenHistory(runtimeConfig.sheetId, deckName)
             });
             showView('topics');
