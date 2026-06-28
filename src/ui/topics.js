@@ -2,7 +2,7 @@ import { createTopicCard } from './components/topicCard.js';
 
 /**
  * @param {Record<string, Array<{text1: string, text2: string}>>} appData
- * @param {{ onDeckClick: (name: string) => void, onDictationClick: (name: string) => void, onListenClick: (name: string) => void, onShuffleDeck: (name: string) => void }} callbacks
+ * @param {{ onDeckClick: (name: string) => void, onDictationClick: (name: string) => void, onListenClick: (name: string) => void, onShuffleDeck: (name: string) => void, onResetHistory: (name: string) => void }} callbacks
  */
 /**
  * Render the topics grid: for each topic create a topic card and attach provided callbacks.
@@ -18,7 +18,8 @@ export function renderTopics(appData, callbacks) {
             onDeckClick: callbacks.onDeckClick,
             onDictationClick: callbacks.onDictationClick,
             onListenClick: callbacks.onListenClick,
-            onShuffleDeck: callbacks.onShuffleDeck
+            onShuffleDeck: callbacks.onShuffleDeck,
+            onResetHistory: callbacks.onResetHistory
         });
         grid.appendChild(card);
     });

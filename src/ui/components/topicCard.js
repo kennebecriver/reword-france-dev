@@ -1,7 +1,7 @@
 /**
  * Create a topic card with main button to open the deck and action buttons: shuffle, dictation, and optionally listen.
  */
-export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onListenClick, onShuffleDeck }) {
+export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClick, onListenClick, onShuffleDeck, onResetHistory }) {
     const card = document.createElement('div');
     card.className = 'topic-card';
 
@@ -62,6 +62,23 @@ export function createTopicCard({ name, cardsCount, onDeckClick, onDictationClic
             onListenClick(name);
         });
         actionButtons.push(listenBtn);
+
+        const resetBtn = document.createElement('button');
+        resetBtn.type = 'button';
+        resetBtn.className = 'shuffle-btn topic-reset-btn';
+        resetBtn.textContent = '🔄';
+        resetBtn.title = 'Reset listen history';
+        resetBtn.setAttribute('aria-label', 'Reset listen history');
+        resetBtn.addEventListener('click', (event) => {
+            event.stopPropagation();
+            event.preventDefault();
+            if (onResetHistory) {
+                onResetHistory(name);
+                resetBtn.classList.add('shuffling');
+                setTimeout(() => resetBtn.classList.remove('shuffling'), 200);
+            }
+        });
+        actionButtons.push(resetBtn);
     }
 
     actionButtons.push(shuffleBtn, dictBtn);

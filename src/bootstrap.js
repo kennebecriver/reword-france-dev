@@ -12,6 +12,7 @@ import { createDictationCard } from './ui/components/dictationCard.js';
 import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
 import { applyMarks, markRowDeleted, markRowRestored } from './state/deletionManager.js';
+import { clearListenHistory } from './state/listenHistory.js';
 
 const runtimeConfig = getRuntimeConfig();
 
@@ -85,6 +86,7 @@ const ListenEngine = createListenEngine({
     sessionKey: 'listenSession',
     viewId: 'deck-listen',
     showView,
+    sheetId: runtimeConfig.sheetId,
     dom: {
         stage: listenShell.stage,
         deckTitleEl: listenShell.deckTitleEl,
@@ -381,7 +383,8 @@ function bootstrapApp() {
                 onDeckClick: (deckName) => Engine.initDeck(deckName),
                 onDictationClick: (deckName) => DictationEngine.initDeck(deckName),
                 onListenClick: (deckName) => ListenEngine.initDeck(deckName),
-                onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName)
+                onShuffleDeck: (deckName) => shuffleTopicSourceDeck(store, deckName),
+                onResetHistory: (deckName) => clearListenHistory(runtimeConfig.sheetId, deckName)
             });
             showView('topics');
         } catch (err) {

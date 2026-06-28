@@ -1,6 +1,7 @@
 import { shuffleArrayInPlace } from './shuffleUtils.js';
 import { bgAudio, fetchTTS } from './autoPlay.js';
 import { renderListenList } from '../ui/listenList.js';
+import { loadListenHistory, saveListenHistory } from '../state/listenHistory.js';
 
 // Index-based deck navigation for Listen mode (no swipe queue / discard).
 /**
@@ -13,6 +14,7 @@ export function createListenEngine({
     viewId,
     showView,
     onAfterRender,
+    sheetId,
     dom: { stage, deckTitleEl, deckCounterEl, playStatusEl, shuffleBtnEl, backNavBtn, nextNavBtn }
 }) {
     let currentIndex = 0;
@@ -38,10 +40,42 @@ export function createListenEngine({
             if (typeof engine._autoPlayStop === 'function') engine._autoPlayStop();
             engine._isPlaying = false;
             currentDeckName = name;
-            store[sessionKey] = [...store.appData[name]];
-            currentIndex = 0;
+            
+            // Try to restore from localStorage history
+            const history = sheetId ? loadListenHistory(sheetId, name) : null;
+            const sourceDeck = store.appData[name];
+            
+            if (history && history.cardCount === sourceDeck.length) {
+                // Restore order from history
+                const orderMap = new Map(sourceDeck.map(card => [card.rowIndex, card]));
+                const restoredDeck = history.order
+                    .map(rowIndex => orderMap.get(rowIndex))
+                    .filter(card => card !== undefined);
+                
+                // If restoration failed (missing cards), fall back to source
+                if (restoredDeck.length === sourceDeck.length) {
+                    store[sessionKey] = restoredDeck;
+                    currentIndex = Math.min(history.activeIndex, restoredDeck.length - 1);
+                } else {
+                    // History is invalid, reset
+                    store[sessionKey] = [...sourceDeck];
+                    currentIndex = 0;
+                }
+            } else {
+                // No history or card count mismatch, start fresh
+                store[sessionKey] = [...sourceDeck];
+                currentIndex = 0;
+            }
+            
             deckTitleEl.textContent = name;
             engine.renderCard(true); // true = auto-scroll to top/active
+            
+            // Save initial state to localStorage
+            if (sheetId) {
+                const order = store[sessionKey].map(card => card.rowIndex);
+                saveListenHistory(sheetId, name, order, currentIndex);
+            }
+            
             showView(viewId);
         },
 
@@ -67,6 +101,13 @@ export function createListenEngine({
 
             engine.updateCounter();
             engine.updateNavButtons();
+            
+            // Save current state to localStorage
+            if (sheetId && currentDeckName) {
+                const order = deck.map(card => card.rowIndex);
+                saveListenHistory(sheetId, currentDeckName, order, currentIndex);
+            }
+            
             if (typeof onAfterRender === 'function') onAfterRender();
             if (typeof engine._onCardRendered === 'function') engine._onCardRendered();
         },
@@ -120,6 +161,13 @@ export function createListenEngine({
             shuffleArrayInPlace(deck);
             currentIndex = 0;
             engine.renderCard(true);
+            
+            // Save shuffled order to localStorage
+            if (sheetId && currentDeckName) {
+                const order = deck.map(card => card.rowIndex);
+                saveListenHistory(sheetId, currentDeckName, order, currentIndex);
+            }
+            
             if (shuffleBtnEl) {
                 shuffleBtnEl.classList.add('shuffling');
                 setTimeout(() => shuffleBtnEl.classList.remove('shuffling'), 200);
