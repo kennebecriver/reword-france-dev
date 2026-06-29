@@ -65,9 +65,6 @@ if (listenShell.revealToggle) {
     listenShell.revealToggle.addEventListener('change', () => applyRevealToggleState());
 }
 
-// Re-apply toggle state after every listen card render (cards are rebuilt from scratch)
-ListenEngine._onCardRendered = () => applyRevealToggleState();
-
 const api = createSheetsApi(runtimeConfig);
 
 const Engine = createCardsEngine({
@@ -125,6 +122,9 @@ const ListenEngine = createListenEngine({
         nextNavBtn: listenShell.repeatBtn
     }
 });
+
+// Re-apply toggle state after every listen card render (cards are rebuilt from scratch)
+ListenEngine._onCardRendered = () => applyRevealToggleState();
 
 // ─── On Air (auto-play) for Listen mode ──────────────────────────────────
 
