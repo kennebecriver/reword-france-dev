@@ -38,26 +38,35 @@ listenShell.repeatBtn.classList.add('btn-nav-next');
 const geminiModeState = initGeminiModeToggle([studyShell.geminiToggle, dictShell.geminiToggle, listenShell.geminiToggle]);
 
 // ─── Reveal toggle for Listen mode ─────────────────────────────────────
-if (listenShell.revealToggle) {
-    listenShell.revealToggle.checked = true; // default: reveal-btn hidden
-    listenShell.revealToggle.addEventListener('change', (e) => {
-        const hideReveals = e.target.checked;
-        const btns = listenShell.stage.querySelectorAll('.reveal-btn');
-        btns.forEach((btn) => {
-            btn.style.display = hideReveals ? 'none' : '';
-        });
-        // Also hide/show the eye-zone container
-        const eyeZones = listenShell.stage.querySelectorAll('.card-eye-zone');
-        eyeZones.forEach((zone) => {
-            zone.style.display = hideReveals ? 'none' : '';
-        });
+function applyRevealToggleState() {
+    if (!listenShell.revealToggle) return;
+    const showAllText = !listenShell.revealToggle.checked; // unchecked = show text
+    const cards = listenShell.stage.querySelectorAll('.listen-card-inner');
+    cards.forEach((card) => {
+        const eyeZone = card.querySelector('.card-eye-zone');
+        const secondaryText = card.querySelector('.card-text-secondary');
+        const extraText = card.querySelector('.card-text-extra');
+        if (showAllText) {
+            // Toggle unchecked: show text for all cards, hide eye-zone
+            if (eyeZone) eyeZone.style.display = 'none';
+            if (secondaryText) secondaryText.style.display = 'block';
+            if (extraText) extraText.style.display = 'block';
+        } else {
+            // Toggle checked: hide text, show eye-zone (reveal-btn visible)
+            if (eyeZone) eyeZone.style.display = 'flex';
+            if (secondaryText) secondaryText.style.display = 'none';
+            if (extraText) extraText.style.display = 'none';
+        }
     });
-    // Apply initial state: hide all reveal-btn
-    const initialBtns = listenShell.stage.querySelectorAll('.reveal-btn');
-    initialBtns.forEach((btn) => { btn.style.display = 'none'; });
-    const initialEyes = listenShell.stage.querySelectorAll('.card-eye-zone');
-    initialEyes.forEach((zone) => { zone.style.display = 'none'; });
 }
+
+if (listenShell.revealToggle) {
+    listenShell.revealToggle.checked = true; // default: text hidden, reveal-btn visible
+    listenShell.revealToggle.addEventListener('change', () => applyRevealToggleState());
+}
+
+// Re-apply toggle state after every listen card render (cards are rebuilt from scratch)
+ListenEngine._onCardRendered = () => applyRevealToggleState();
 
 const api = createSheetsApi(runtimeConfig);
 
