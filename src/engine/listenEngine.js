@@ -68,15 +68,14 @@ export function createListenEngine({
             }
             
             deckTitleEl.textContent = name;
-            engine.renderCard(true); // true = auto-scroll to top/active
+            showView(viewId);
+            engine.renderCard(true); // true = auto-scroll to active card
             
             // Save initial state to localStorage
             if (sheetId) {
                 const order = store[sessionKey].map(card => card.rowIndex);
                 saveListenHistory(sheetId, name, order, currentIndex);
             }
-            
-            showView(viewId);
         },
 
         renderCard(autoScroll = false) {

@@ -62,7 +62,14 @@ function applyRevealToggleState() {
 
 if (listenShell.revealToggle) {
     listenShell.revealToggle.checked = true; // default: text hidden, reveal-btn visible
-    listenShell.revealToggle.addEventListener('change', () => applyRevealToggleState());
+    listenShell.revealToggle.addEventListener('change', () => {
+        applyRevealToggleState();
+        // Scroll to the active card after toggle changes layout
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (activeItem) {
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
 }
 
 const api = createSheetsApi(runtimeConfig);
