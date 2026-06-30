@@ -323,15 +323,25 @@ function initDeckKeyboardShortcuts() {
                 return;
             }
 
-            if (listenActive && e.key === 'ArrowLeft') {
+            if (listenActive && e.key === 'ArrowUp') {
                 e.preventDefault();
                 ListenEngine.goBack();
                 return;
             }
 
-            if (listenActive && e.key === 'ArrowRight') {
+            if (listenActive && e.key === 'ArrowDown') {
                 e.preventDefault();
                 ListenEngine.goNext();
+                return;
+            }
+
+            if (listenActive && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+                if (activeItem) {
+                    const deleteBtn = activeItem.querySelector('.listen-card-delete-btn');
+                    if (deleteBtn) deleteBtn.click();
+                }
                 return;
             }
 
