@@ -151,13 +151,12 @@ body {
     overflow: hidden;
     transform: translate3d(var(--x, 0), var(--y, 0), 0) rotate(var(--r, 0));
     touch-action: none;
-    will-change: transform;
     backface-visibility: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
-.card.animating { transition: transform 0.4s cubic-bezier(0.15, 0.3, 0.25, 1), opacity 0.4s; }
-.card-active { z-index: 2; opacity: 1; background-color: var(--card-active-bg); border-color: rgba(91, 155, 209, 0.25); box-shadow: none; }
+.card.animating { transition: transform 0.4s cubic-bezier(0.15, 0.3, 0.25, 1), opacity 0.4s; will-change: transform; }
+.card-active { z-index: 2; opacity: 1; background-color: var(--card-active-bg); border-color: rgba(91, 155, 209, 0.25); }
 /* Avoid text blur on mobile: scaling text layers during promotion causes resampling artifacts. */
 .card-next { z-index: 1; transform: translate3d(0, 10px, 0); opacity: 0.45; }
 
