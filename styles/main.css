@@ -1,12 +1,13 @@
 :root {
-    --bg: #0f1115;
-    --card-bg: #1c1f26;
+    --bg: #0B1017;
+    --card-bg: #131922;
+    --card-active-bg: #151F2E;
     --text-main: #e2e8f0;
-    --text-muted: #64748b;
-    --accent: #3b82f6;
+    --text-muted: #7C8794;
+    --accent: #5B9BD1;
     --danger: #ef4444;
     --success: #10b981;
-    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color: rgba(255, 255, 255, 0.08);
     --radius-sm: 10px;
     --radius-md: 16px;
     --radius-lg: 24px;
@@ -156,7 +157,7 @@ body {
 }
 
 .card.animating { transition: transform 0.4s cubic-bezier(0.15, 0.3, 0.25, 1), opacity 0.4s; }
-.card-active { z-index: 2; opacity: 1; }
+.card-active { z-index: 2; opacity: 1; background-color: var(--card-active-bg); border-color: rgba(91, 155, 209, 0.25); }
 /* Avoid text blur on mobile: scaling text layers during promotion causes resampling artifacts. */
 .card-next { z-index: 1; transform: translate3d(0, 10px, 0); opacity: 0.45; }
 
