@@ -11,7 +11,7 @@ import { createStudyCard } from './ui/components/studyCard.js';
 import { createDictationCard } from './ui/components/dictationCard.js';
 import { createListenCard, revealHiddenPhrase } from './ui/components/listenCard.js';
 import { shuffleTopicSourceDeck } from './engine/shuffleUtils.js';
-import { applyMarks, markRowDeleted, markRowRestored } from './state/deletionManager.js';
+import { applyMarks, markRowDeleted, markRowRestored, clearMarkedRows } from './state/deletionManager.js';
 import { clearListenHistory } from './state/listenHistory.js';
 
 const runtimeConfig = getRuntimeConfig();
@@ -427,7 +427,7 @@ function bootstrapApp() {
                     clearListenHistory(runtimeConfig.sheetId, deckName);
                     console.log('History cleared for', deckName);
                 },
-                onResetHistory: (deckName) => clearListenHistory(runtimeConfig.sheetId, deckName)
+                onResetHistory: (deckName) => clearMarkedRows(runtimeConfig.sheetId, deckName)
             });
             showView('topics');
         } catch (err) {

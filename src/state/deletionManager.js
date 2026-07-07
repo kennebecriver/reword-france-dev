@@ -102,6 +102,16 @@ export function markRowRestored(sheetId, sheetName, rowIndex) {
 }
 
 /**
+ * Clear all marked rows for a sheet.
+ * @param {string} sheetId
+ * @param {string} sheetName
+ */
+export function clearMarkedRows(sheetId, sheetName) {
+    const key = getStorageKey(sheetId, sheetName);
+    localStorage.removeItem(key);
+}
+
+/**
  * Apply marks to cards: set isMarked=true for rows that were previously marked.
  * Does NOT filter out — cards stay visible.
  * @param {Array} cards - Array of card objects with rowIndex property
