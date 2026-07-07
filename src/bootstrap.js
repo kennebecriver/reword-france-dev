@@ -43,7 +43,8 @@ function applyRevealToggleState() {
     const showAllText = !listenShell.revealToggle.checked; // unchecked = show text
     const cards = listenShell.stage.querySelectorAll('.listen-card-inner');
     cards.forEach((card) => {
-        const eyeZone = card.querySelector('.card-eye-zone');
+        // Target only the secondary eye-zone (not the primary one)
+        const eyeZone = card.querySelector('.card-eye-zone:not(.card-eye-zone-primary)');
         const secondaryText = card.querySelector('.card-text-secondary');
         const extraText = card.querySelector('.card-text-extra');
         if (showAllText) {

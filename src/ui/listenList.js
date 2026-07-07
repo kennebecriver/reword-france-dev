@@ -78,6 +78,9 @@ export function renderListenList(container, deck, activeIndex, onCardClick, auto
 
     // Update active state and scrolling
     updateActiveState(container, activeIndex, autoScroll);
+    
+    // Return whether rebuild happened
+    return needsRebuild;
 }
 
 /**

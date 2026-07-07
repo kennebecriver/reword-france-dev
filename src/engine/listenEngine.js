@@ -88,9 +88,12 @@ export function createListenEngine({
             currentIndex = Math.max(0, Math.min(currentIndex, deck.length - 1));
             
             // Render the vertical list, passing a click handler to jump to a card
-            renderListenList(stage, deck, currentIndex, (index) => {
-                currentIndex = index;
-                engine.renderCard(true);
+            const wasRebuilt = renderListenList(stage, deck, currentIndex, (index) => {
+                // Only update if clicking a different card
+                if (index !== currentIndex) {
+                    currentIndex = index;
+                    engine.renderCard(true);
+                }
             }, autoScroll, (rowIndex, isMarked) => {
                 // Delete callback
                 if (typeof engine._onDeleteCard === 'function') {
@@ -108,7 +111,8 @@ export function createListenEngine({
             }
             
             if (typeof onAfterRender === 'function') onAfterRender();
-            if (typeof engine._onCardRendered === 'function') engine._onCardRendered();
+            // Only reapply toggle state when list was actually rebuilt
+            if (wasRebuilt && typeof engine._onCardRendered === 'function') engine._onCardRendered();
         },
 
         goNext() {
