@@ -218,7 +218,7 @@ const listenAutoPlay = createAutoPlay({
     },
     onStateChange: setOnAirButtonState,
     onStepStart: () => {
-        // blink play status if needed
+        listenShell.playStatusEl.textContent = '▶ Playing';
     },
     onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; },
     onBeforeNext: () => {
@@ -253,7 +253,7 @@ const listenAutoPlayFr = createAutoPlayFr({
     },
     onStateChange: setOnAirFrButtonState,
     onStepStart: () => {
-        // blink play status if needed
+        listenShell.playStatusEl.textContent = '▶ Playing (FR)';
     },
     onTtsError: (msg) => { listenShell.playStatusEl.textContent = msg; },
     onBeforeNext: () => {
