@@ -298,6 +298,17 @@ body {
     letter-spacing: 0.01em;
 }
 
+.reveal-toggles-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: 14px;
+    padding: 6px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.02);
+}
+
 /* === Shuffle Button === */
 .shuffle-btn {
     background: rgba(255,255,255,0.03);

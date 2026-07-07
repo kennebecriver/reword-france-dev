@@ -37,6 +37,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     const playStatusEl = qs(deckRoot, '.deck-play-status');
     const autoPlayToggle = qs(deckRoot, '.deck-auto-play-toggle');
     const geminiToggle = qs(deckRoot, '.deck-gemini-toggle');
+    const revealTogglesGroup = qso(deckRoot, '.reveal-toggles-group');
     const revealToggleWrapper = qso(deckRoot, '.deck-reveal-toggle-wrapper');
     const revealToggle = qso(deckRoot, '.deck-reveal-toggle');
     const revealToggleLabel = qso(deckRoot, '.deck-reveal-toggle-label');
@@ -69,10 +70,7 @@ export function mountDeckShell(viewRoot, options = {}) {
     }
 
     if (options.showRevealToggle) {
-        if (revealToggleWrapper) revealToggleWrapper.style.display = '';
-        if (revealToggleLabel) revealToggleLabel.style.display = '';
-        if (revealPrimaryToggleWrapper) revealPrimaryToggleWrapper.style.display = '';
-        if (revealPrimaryToggleLabel) revealPrimaryToggleLabel.style.display = '';
+        if (revealTogglesGroup) revealTogglesGroup.style.display = '';
     }
 
     if (options.hideOnAir) {
