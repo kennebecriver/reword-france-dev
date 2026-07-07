@@ -15,6 +15,16 @@ export function createListenCard(data) {
     const body = document.createElement('div');
     body.className = 'card-body';
 
+    const primaryEyeZone = document.createElement('div');
+    primaryEyeZone.className = 'card-eye-zone card-eye-zone-primary';
+    primaryEyeZone.style.display = 'none';
+
+    const primaryRevealBtn = document.createElement('button');
+    primaryRevealBtn.className = 'reveal-btn';
+    primaryRevealBtn.type = 'button';
+    primaryRevealBtn.textContent = '👁';
+    primaryEyeZone.appendChild(primaryRevealBtn);
+
     const primaryText = document.createElement('div');
     primaryText.className = 'card-text-primary';
     primaryText.textContent = data.text2;
@@ -36,8 +46,14 @@ export function createListenCard(data) {
     extraText.textContent = data.text3 ?? '';
     
     eyeZone.appendChild(revealBtn);
-    body.append(primaryText, eyeZone, secondaryText, extraText);
+    body.append(primaryEyeZone, primaryText, eyeZone, secondaryText, extraText);
     card.appendChild(body);
+
+    primaryRevealBtn.onpointerdown = (event) => event.stopPropagation();
+    primaryRevealBtn.onclick = () => {
+        primaryEyeZone.style.display = 'none';
+        primaryText.style.display = 'block';
+    };
 
     revealBtn.onpointerdown = (event) => event.stopPropagation();
     revealBtn.onclick = () => revealHiddenPhrase(card);
@@ -46,11 +62,11 @@ export function createListenCard(data) {
 }
 
 export function revealHiddenPhrase(card) {
-    const eyeZone = card.querySelector('.card-eye-zone');
+    const eyeZones = card.querySelectorAll('.card-eye-zone:not(.card-eye-zone-primary)');
     const secondaryText = card.querySelector('.card-text-secondary');
     const extraText = card.querySelector('.card-text-extra');
 
-    if (eyeZone) eyeZone.style.display = 'none';
+    eyeZones.forEach(ez => { if (ez) ez.style.display = 'none'; });
     if (secondaryText) secondaryText.style.display = 'block';
     if (extraText) extraText.style.display = 'block';
 }

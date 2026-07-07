@@ -60,10 +60,41 @@ function applyRevealToggleState() {
     });
 }
 
+function applyRevealPrimaryToggleState() {
+    if (!listenShell.revealPrimaryToggle) return;
+    const showPrimary = !listenShell.revealPrimaryToggle.checked; // unchecked = show primary text
+    const cards = listenShell.stage.querySelectorAll('.listen-card-inner');
+    cards.forEach((card) => {
+        const primaryEyeZone = card.querySelector('.card-eye-zone-primary');
+        const primaryText = card.querySelector('.card-text-primary');
+        if (showPrimary) {
+            // Toggle unchecked: show primary text, hide eye-zone
+            if (primaryEyeZone) primaryEyeZone.style.display = 'none';
+            if (primaryText) primaryText.style.display = 'block';
+        } else {
+            // Toggle checked: hide primary text, show eye-zone (reveal-btn visible)
+            if (primaryEyeZone) primaryEyeZone.style.display = 'flex';
+            if (primaryText) primaryText.style.display = 'none';
+        }
+    });
+}
+
 if (listenShell.revealToggle) {
     listenShell.revealToggle.checked = true; // default: text hidden, reveal-btn visible
     listenShell.revealToggle.addEventListener('change', () => {
         applyRevealToggleState();
+        // Scroll to the active card after toggle changes layout
+        const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
+        if (activeItem) {
+            activeItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+}
+
+if (listenShell.revealPrimaryToggle) {
+    listenShell.revealPrimaryToggle.checked = false; // default: primary text visible
+    listenShell.revealPrimaryToggle.addEventListener('change', () => {
+        applyRevealPrimaryToggleState();
         // Scroll to the active card after toggle changes layout
         const activeItem = listenShell.stage.querySelector('.listen-list-item.active');
         if (activeItem) {
@@ -129,9 +160,6 @@ const ListenEngine = createListenEngine({
         nextNavBtn: listenShell.repeatBtn
     }
 });
-
-// Re-apply toggle state after every listen card render (cards are rebuilt from scratch)
-ListenEngine._onCardRendered = () => applyRevealToggleState();
 
 // ─── On Air (auto-play) for Listen mode ──────────────────────────────────
 
@@ -241,6 +269,8 @@ const listenAutoPlayFr = createAutoPlayFr({
 
 // Attach auto-play hooks to ListenEngine
 ListenEngine._onCardRendered = () => {
+    applyRevealToggleState();
+    applyRevealPrimaryToggleState();
     listenAutoPlay.onCardRendered();
     listenAutoPlayFr.onCardRendered();
 };
