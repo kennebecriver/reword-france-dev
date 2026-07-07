@@ -427,7 +427,10 @@ function bootstrapApp() {
                     clearListenHistory(runtimeConfig.sheetId, deckName);
                     console.log('History cleared for', deckName);
                 },
-                onResetHistory: (deckName) => clearMarkedRows(runtimeConfig.sheetId, deckName)
+                onResetHistory: (deckName) => {
+                    clearMarkedRows(runtimeConfig.sheetId, deckName);
+                    clearListenHistory(runtimeConfig.sheetId, deckName);
+                }
             });
             showView('topics');
         } catch (err) {
