@@ -270,10 +270,15 @@ const listenAutoPlayFr = createAutoPlayFr({
 
 // Attach auto-play hooks to ListenEngine
 ListenEngine._onCardRendered = () => {
-    applyRevealToggleState();
-    applyRevealPrimaryToggleState();
+    // Only reapply toggle state when list is rebuilt (handled in listenEngine)
     listenAutoPlay.onCardRendered();
     listenAutoPlayFr.onCardRendered();
+};
+
+// Separate hook for toggle state reapplication (only on rebuild)
+ListenEngine._onListRebuilt = () => {
+    applyRevealToggleState();
+    applyRevealPrimaryToggleState();
 };
 ListenEngine._autoPlayStop = () => {
     listenAutoPlay.stop();

@@ -111,8 +111,10 @@ export function createListenEngine({
             }
             
             if (typeof onAfterRender === 'function') onAfterRender();
-            // Only reapply toggle state when list was actually rebuilt
-            if (wasRebuilt && typeof engine._onCardRendered === 'function') engine._onCardRendered();
+            // Reapply toggle state only when list was actually rebuilt
+            if (wasRebuilt && typeof engine._onListRebuilt === 'function') engine._onListRebuilt();
+            // Always call _onCardRendered for autoplay to continue
+            if (typeof engine._onCardRendered === 'function') engine._onCardRendered();
         },
 
         goNext() {
